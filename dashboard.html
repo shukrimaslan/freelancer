@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RosterMY — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .sidebar {
+      width: 220px; min-width: 220px;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex; flex-direction: column; gap: .25rem;
+      position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+    }
+    .sidebar-label { font-size: .7rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em; padding: .4rem .6rem .15rem; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: .6rem;
+      padding: .5rem .75rem; border-radius: 8px; font-size: .875rem; font-weight: 500;
+      color: var(--text-secondary); text-decoration: none; cursor: pointer; border: none;
+      background: none; width: 100%; text-align: left; transition: all .15s;
+    }
+    .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .sidebar-link:hover, .sidebar-link.active { background: var(--brand-light); color: var(--brand); }
+    .main-content { flex: 1; padding: 1.75rem; overflow-y: auto; min-width: 0; }
+    .app-body { display: flex; height: calc(100vh - 57px); }
+    .pending-dot { width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-left:auto; }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
+    }
+    .modal {
+      background: var(--surface); border-radius: var(--radius-lg);
+      width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+      padding: 1.75rem; box-shadow: var(--shadow-md);
+    }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+    .close-btn { background:none; border:none; font-size:1.25rem; cursor:pointer; color:var(--text-muted); line-height:1; }
+    .fl-detail-row { display:flex; gap:.5rem; font-size:.875rem; padding:.5rem 0;
+      border-bottom:1px solid var(--border); }
+    .fl-detail-row:last-child { border-bottom:none; }
+    .fl-detail-label { width:140px; min-width:140px; color:var(--text-muted); font-weight:500; }
+    @media(max-width:768px){ .sidebar { display:none; } }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="navbar-brand" href="dashboard.html">
+        <div class="logo-dot">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        RosterMY
+      </a>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar">A</div>
+        <span id="nav-name">Admin</span>
+        <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Overview</div>
+      <a class="sidebar-link active" data-panel="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+
+      <div class="sidebar-label" style="margin-top:.75rem">Freelancers</div>
+      <a class="sidebar-link" data-panel="pending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Pending approval
+        <span class="pending-dot" id="pending-indicator" style="display:none"></span>
+      </a>
+      <a class="sidebar-link" data-panel="directory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        All freelancers
+      </a>
+
+      <div class="sidebar-label" style="margin-top:.75rem">Account</div>
+      <button class="sidebar-link" id="sidebar-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+      <!-- Overview panel -->
+      <div id="panel-overview">
+        <div class="page-header">
+          <div>
+            <h1>Dashboard</h1>
+            <p style="margin-top:.2rem">Welcome back, <span id="welcome-name">Admin</span></p>
+          </div>
+        </div>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card"><div class="stat-label">Total freelancers</div><div class="stat-value" id="stat-total">—</div></div>
+          <div class="stat-card"><div class="stat-label">Pending approval</div><div class="stat-value" id="stat-pending">—</div></div>
+          <div class="stat-card"><div class="stat-label">Approved & active</div><div class="stat-value" id="stat-approved">—</div></div>
+          <div class="stat-card"><div class="stat-label">Available now</div><div class="stat-value" id="stat-available">—</div></div>
+        </div>
+
+        <h2 style="margin:2rem 0 1rem">Recently registered</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>State</th><th>Categories</th><th>Status</th><th>Registered</th></tr></thead>
+            <tbody id="recent-tbody"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pending panel -->
+      <div id="panel-pending" style="display:none">
+        <div class="page-header">
+          <div><h1>Pending approval</h1><p>Review and approve new freelancer registrations.</p></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>State</th><th>Categories</th><th>Registered</th><th>Action</th></tr></thead>
+            <tbody id="pending-tbody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Directory panel -->
+      <div id="panel-directory" style="display:none">
+        <div class="page-header">
+          <div><h1>All freelancers</h1><p>Browse and manage your roster.</p></div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <input type="text" id="search-input" placeholder="Search name or skill…" style="width:220px">
+            <select id="filter-state" style="width:160px">
+              <option value="">All states</option>
+              <option>Kuala Lumpur</option><option>Selangor</option><option>Penang</option>
+              <option>Johor</option><option>Perak</option><option>Kedah</option>
+              <option>Kelantan</option><option>Terengganu</option><option>Pahang</option>
+              <option>Negeri Sembilan</option><option>Melaka</option><option>Sabah</option>
+              <option>Sarawak</option>
+            </select>
+            <select id="filter-avail" style="width:160px">
+              <option value="">All availability</option>
+              <option value="available">Available</option>
+              <option value="busy">Busy</option>
+              <option value="open_to_offers">Open to offers</option>
+            </select>
+          </div>
+        </div>
+        <div class="fl-grid" id="fl-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Freelancer detail modal -->
+  <div class="modal-overlay" id="fl-modal" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-name">Freelancer</h2>
+        <button class="close-btn" id="modal-close">✕</button>
+      </div>
+      <div id="modal-body"></div>
+      <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { guardAuth } from "./auth.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import {
+      collection, getDocs, doc, updateDoc, query, where, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+    // ── Auth guard ────────────────────────────────
+    const { user, userData } = await guardAuth(["admin", "pm"]);
+    const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "A";
+    document.getElementById("nav-avatar").textContent   = initials;
+    document.getElementById("nav-name").textContent     = userData.displayName || "Admin";
+    document.getElementById("welcome-name").textContent = userData.displayName?.split(" ")[0] || "Admin";
+
+    // ── Sign out ──────────────────────────────────
+    const doLogout = async () => { await signOut(auth); window.location.href = "index.html"; };
+    document.getElementById("btn-logout").addEventListener("click",  doLogout);
+    document.getElementById("sidebar-logout").addEventListener("click", doLogout);
+
+    // ── Panel switching ───────────────────────────
+    document.querySelectorAll(".sidebar-link[data-panel]").forEach(link => {
+      link.addEventListener("click", () => {
+        document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
+        link.classList.add("active");
+        document.querySelectorAll("[id^='panel-']").forEach(p => p.style.display = "none");
+        document.getElementById("panel-" + link.dataset.panel).style.display = "block";
+      });
+    });
+
+    // ── Load all freelancers ──────────────────────
+    let allFreelancers = [];
+
+    async function loadFreelancers() {
+      const snap = await getDocs(collection(db, "freelancers"));
+      allFreelancers = [];
+      snap.forEach(d => allFreelancers.push({ id: d.id, ...d.data() }));
+
+      // Stats
+      const total     = allFreelancers.length;
+      const pending   = allFreelancers.filter(f => !f.isApproved).length;
+      const approved  = allFreelancers.filter(f =>  f.isApproved).length;
+      const available = allFreelancers.filter(f =>  f.availability === "available" && f.isApproved).length;
+
+      document.getElementById("stat-total").textContent     = total;
+      document.getElementById("stat-pending").textContent   = pending;
+      document.getElementById("stat-approved").textContent  = approved;
+      document.getElementById("stat-available").textContent = available;
+
+      if (pending > 0) document.getElementById("pending-indicator").style.display = "inline-block";
+
+      renderRecent();
+      renderPending();
+      renderDirectory();
+    }
+
+    // ── Recent table ──────────────────────────────
+    function renderRecent() {
+      const sorted = [...allFreelancers].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,8);
+      const tbody  = document.getElementById("recent-tbody");
+      if (!sorted.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">No freelancers yet.</td></tr>`; return; }
+      tbody.innerHTML = sorted.map(f => `
+        <tr>
+          <td><strong>${f.fullName}</strong></td>
+          <td>${f.state || "—"}</td>
+          <td>${(f.categoryIds||[]).slice(0,2).join(", ") || "—"}</td>
+          <td>${f.isApproved
+            ? `<span class="tag tag-green">Approved</span>`
+            : `<span class="tag tag-amber">Pending</span>`}</td>
+          <td>${f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString("en-MY") : "—"}</td>
+        </tr>`).join("");
+    }
+
+    // ── Pending table ─────────────────────────────
+    function renderPending() {
+      const pending = allFreelancers.filter(f => !f.isApproved);
+      const tbody   = document.getElementById("pending-tbody");
+      if (!pending.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty">🎉 No pending applications.</div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = pending.map(f => `
+        <tr>
+          <td><strong>${f.fullName}</strong></td>
+          <td style="color:var(--text-muted);font-size:.8rem">${f.id}</td>
+          <td>${f.state || "—"}</td>
+          <td>${(f.categoryIds||[]).join(", ") || "—"}</td>
+          <td>${f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString("en-MY") : "—"}</td>
+          <td style="display:flex;gap:.4rem">
+            <button class="btn btn-primary btn-sm" onclick="approveFreelancer('${f.id}')">Approve</button>
+            <button class="btn btn-ghost btn-sm"   onclick="openModal('${f.id}')">View</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    // ── Directory grid ────────────────────────────
+    function renderDirectory(filter = "") {
+      const stateFilter = document.getElementById("filter-state")?.value || "";
+      const availFilter = document.getElementById("filter-avail")?.value || "";
+      const search      = (filter || document.getElementById("search-input")?.value || "").toLowerCase();
+
+      let list = allFreelancers.filter(f => f.isApproved);
+      if (stateFilter) list = list.filter(f => f.state === stateFilter);
+      if (availFilter) list = list.filter(f => f.availability === availFilter);
+      if (search)      list = list.filter(f =>
+        f.fullName?.toLowerCase().includes(search) ||
+        (f.tags||[]).some(t => t.includes(search)) ||
+        (f.categoryIds||[]).some(c => c.includes(search))
+      );
+
+      const grid = document.getElementById("fl-grid");
+      if (!list.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted)">No freelancers found.</div>`;
+        return;
+      }
+
+      const availMap = {
+        available:    ["tag-green",  "Available"],
+        busy:         ["tag-red",    "Busy"],
+        open_to_offers:["tag-amber", "Open to offers"]
+      };
+
+      grid.innerHTML = list.map(f => {
+        const av   = availMap[f.availability] || ["tag-gray","Unknown"];
+        const init = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "?";
+        const tags = (f.tags||[]).slice(0,3).map(t=>`<span class="tag tag-gray">${t}</span>`).join("");
+        return `
+          <div class="fl-card" onclick="openModal('${f.id}')" style="cursor:pointer">
+            <div class="fl-card-top">
+              <div class="fl-avatar">${init}</div>
+              <div>
+                <div class="fl-name">${f.fullName}</div>
+                <div class="fl-title">${(f.categoryIds||[]).join(" · ") || "Freelancer"}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:.8rem">
+              <span class="tag ${av[0]}">${av[1]}</span>
+              <span style="color:var(--text-muted)">${f.state||""}</span>
+            </div>
+            <div class="fl-tags">${tags}</div>
+            <div style="margin-top:.75rem;font-size:.8rem;color:var(--text-muted)">
+              RM ${f.rateMin||0}${f.rateMax ? '–'+f.rateMax : '+'} · ${f.experienceLevel||""}
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    // ── Search / filter listeners ─────────────────
+    setTimeout(() => {
+      document.getElementById("search-input")?.addEventListener("input", e => renderDirectory(e.target.value));
+      document.getElementById("filter-state")?.addEventListener("change", () => renderDirectory());
+      document.getElementById("filter-avail")?.addEventListener("change", () => renderDirectory());
+    }, 100);
+
+    // ── Approve freelancer ────────────────────────
+    window.approveFreelancer = async (uid) => {
+      try {
+        await updateDoc(doc(db, "freelancers", uid), { isApproved: true, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "users", uid),        { isApproved: true });
+        allFreelancers = allFreelancers.map(f => f.id === uid ? { ...f, isApproved: true } : f);
+        renderRecent(); renderPending(); renderDirectory();
+        const pending = allFreelancers.filter(f => !f.isApproved).length;
+        document.getElementById("pending-indicator").style.display = pending > 0 ? "inline-block" : "none";
+        document.getElementById("stat-pending").textContent  = pending;
+        document.getElementById("stat-approved").textContent = allFreelancers.filter(f=>f.isApproved).length;
+        if (document.getElementById("fl-modal").style.display !== "none") closeModal();
+      } catch(e) { alert("Error approving: " + e.message); }
+    };
+
+    // ── Modal ─────────────────────────────────────
+    window.openModal = (uid) => {
+      const f = allFreelancers.find(fl => fl.id === uid);
+      if (!f) return;
+      document.getElementById("modal-name").textContent = f.fullName;
+
+      const rows = [
+        ["Email",         f.id],
+        ["Phone",         f.phone || "—"],
+        ["State",         f.state || "—"],
+        ["Experience",    f.experienceLevel || "—"],
+        ["Languages",     (f.languages||[]).join(", ") || "—"],
+        ["Categories",    (f.categoryIds||[]).join(", ") || "—"],
+        ["Skills",        (f.tags||[]).join(", ") || "—"],
+        ["Rate",          `RM ${f.rateMin||0}${f.rateMax?"–"+f.rateMax:"+"} (${f.rateType||""})`],
+        ["Min budget",    `RM ${f.minProjectBudget||0}`],
+        ["Bank",          `${f.bankName||"—"} · ${f.bankAccountName||"—"}`],
+        ["Availability",  f.availability || "—"],
+        ["Bio",           f.bio || "—"],
+        ["Behance",       f.portfolioLinks?.behance ? `<a href="${f.portfolioLinks.behance}" target="_blank" style="color:var(--brand)">Link</a>` : "—"],
+        ["GitHub",        f.portfolioLinks?.github  ? `<a href="${f.portfolioLinks.github}"  target="_blank" style="color:var(--brand)">Link</a>` : "—"],
+        ["Website",       f.portfolioLinks?.website ? `<a href="${f.portfolioLinks.website}" target="_blank" style="color:var(--brand)">Link</a>` : "—"],
+        ["SSM",           f.ssm || "—"],
+        ["Status",        f.isApproved ? "✅ Approved" : "⏳ Pending"],
+        ["Registered",    f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString("en-MY") : "—"],
+      ];
+
+      document.getElementById("modal-body").innerHTML = rows.map(([l,v]) =>
+        `<div class="fl-detail-row"><span class="fl-detail-label">${l}</span><span>${v}</span></div>`
+      ).join("");
+
+      const actions = document.getElementById("modal-actions");
+      actions.innerHTML = "";
+      if (!f.isApproved) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary";
+        btn.textContent = "✓ Approve freelancer";
+        btn.onclick = () => approveFreelancer(uid);
+        actions.appendChild(btn);
+      }
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "btn btn-ghost";
+      closeBtn.textContent = "Close";
+      closeBtn.onclick = closeModal;
+      actions.appendChild(closeBtn);
+
+      document.getElementById("fl-modal").style.display = "flex";
+    };
+
+    function closeModal() {
+      document.getElementById("fl-modal").style.display = "none";
+    }
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("fl-modal").addEventListener("click", e => {
+      if (e.target === document.getElementById("fl-modal")) closeModal();
+    });
+
+    // ── Init ──────────────────────────────────────
+    loadFreelancers();
+  </script>
+</body>
+</html>

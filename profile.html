@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RosterMY — My Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .profile-hero {
+      display: flex; align-items: flex-start; gap: 1.25rem;
+      margin-bottom: 1.75rem; flex-wrap: wrap;
+    }
+    .profile-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--brand); color: white; font-size: 1.6rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .avail-select {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .35rem .85rem .35rem .6rem; border-radius: 99px;
+      border: 1px solid var(--border); font-size: .85rem; font-weight: 500;
+      font-family: var(--font); cursor: pointer; background: var(--surface);
+    }
+    .avail-select.available { border-color: var(--success); color: var(--success); }
+    .avail-select.busy      { border-color: var(--danger);  color: var(--danger);  }
+    .avail-select.open_to_offers { border-color: var(--warning); color: var(--warning); }
+    .section { margin-bottom: 2rem; }
+    .section h3 { margin-bottom: .85rem; font-size: .85rem; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+    .edit-row { display:flex; align-items:flex-start; gap:.75rem; }
+    .edit-row input, .edit-row select { flex:1; }
+    .not-approved-banner {
+      background: var(--warning-light); border: 1px solid #fcd34d; border-radius: var(--radius);
+      padding: .85rem 1rem; font-size: .875rem; color: #92400e; margin-bottom: 1.5rem;
+      display: flex; gap: .6rem; align-items: flex-start;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container navbar-inner">
+      <a class="navbar-brand" href="profile.html">
+        <div class="logo-dot">
+          <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        RosterMY
+      </a>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar">F</div>
+        <span id="nav-name">Freelancer</span>
+        <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container page-wrap" style="max-width:720px">
+    <div id="loading" style="text-align:center;padding:3rem"><div class="spinner"></div></div>
+    <div id="main-content" style="display:none">
+
+      <!-- Not approved banner -->
+      <div id="pending-banner" class="not-approved-banner" style="display:none">
+        ⏳ <div><strong>Your profile is under review.</strong> Our admin team will approve your account within 1–2 working days. You'll be notified by email.</div>
+      </div>
+
+      <!-- Profile hero -->
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profile-initials">?</div>
+        <div style="flex:1">
+          <h1 id="profile-name" style="font-size:1.4rem"></h1>
+          <p id="profile-cats" style="margin-top:.2rem;font-size:.875rem"></p>
+          <div style="margin-top:.6rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <select class="avail-select" id="avail-select" onchange="updateAvailability(this.value)">
+              <option value="available">🟢 Available</option>
+              <option value="open_to_offers">🟡 Open to offers</option>
+              <option value="busy">🔴 Busy</option>
+            </select>
+            <span id="profile-state" style="font-size:.85rem;color:var(--text-muted)"></span>
+          </div>
+        </div>
+        <div>
+          <span id="verified-badge" style="display:none" class="tag tag-brand">✓ Verified</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="edit">Edit profile</button>
+        <button class="tab-btn" data-tab="payment">Payment details</button>
+      </div>
+
+      <!-- Overview tab -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="section">
+          <h3>About</h3>
+          <p id="prof-bio" style="color:var(--text-primary);line-height:1.7"></p>
+        </div>
+
+        <div class="section">
+          <h3>Skills</h3>
+          <div id="prof-tags" class="tag-picker"></div>
+        </div>
+
+        <div class="section">
+          <h3>Portfolio</h3>
+          <div id="prof-links" style="display:flex;gap:.75rem;flex-wrap:wrap"></div>
+        </div>
+
+        <div class="section">
+          <h3>Rates</h3>
+          <p id="prof-rate" style="color:var(--text-primary)"></p>
+        </div>
+
+        <div class="section">
+          <h3>Stats</h3>
+          <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+            <div class="stat-card"><div class="stat-label">Trust score</div><div class="stat-value" id="stat-trust">—</div></div>
+            <div class="stat-card"><div class="stat-label">Projects done</div><div class="stat-value" id="stat-projects">—</div></div>
+            <div class="stat-card"><div class="stat-label">Total ratings</div><div class="stat-value" id="stat-ratings">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit tab -->
+      <div class="tab-panel" id="tab-edit">
+        <div id="save-alert" style="display:none;margin-bottom:1rem"></div>
+
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea id="edit-bio" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="edit-phone">
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <select id="edit-state">
+              <option>Kuala Lumpur</option><option>Selangor</option><option>Penang</option>
+              <option>Johor</option><option>Perak</option><option>Kedah</option>
+              <option>Kelantan</option><option>Terengganu</option><option>Pahang</option>
+              <option>Negeri Sembilan</option><option>Melaka</option><option>Sabah</option>
+              <option>Sarawak</option><option>Putrajaya</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Languages</label>
+          <input type="text" id="edit-lang" placeholder="e.g. Bahasa Malaysia, English">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rate from (RM)</label>
+            <input type="number" id="edit-rate-min">
+          </div>
+          <div class="form-group">
+            <label>Rate to (RM)</label>
+            <input type="number" id="edit-rate-max">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Behance</label>
+          <input type="url" id="edit-behance" placeholder="https://behance.net/…">
+        </div>
+        <div class="form-group">
+          <label>GitHub</label>
+          <input type="url" id="edit-github" placeholder="https://github.com/…">
+        </div>
+        <div class="form-group">
+          <label>Personal website</label>
+          <input type="url" id="edit-website" placeholder="https://…">
+        </div>
+
+        <button class="btn btn-primary" id="btn-save">Save changes</button>
+      </div>
+
+      <!-- Payment tab -->
+      <div class="tab-panel" id="tab-payment">
+        <div class="alert alert-info" style="margin-bottom:1.25rem">
+          🔒 Payment details are private and only visible to admin.
+        </div>
+        <div id="payment-display">Loading…</div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { guardAuth } from "./auth.js";
+    import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import {
+      doc, getDoc, updateDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+    const { user, userData } = await guardAuth(["freelancer"]);
+    const uid = user.uid;
+
+    document.getElementById("btn-logout").addEventListener("click", async () => {
+      await signOut(auth); window.location.href = "index.html";
+    });
+
+    // ── Tabs ──────────────────────────────────────
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // ── Load profile ──────────────────────────────
+    const snap = await getDoc(doc(db, "freelancers", uid));
+    const f    = snap.data();
+
+    document.getElementById("loading").style.display      = "none";
+    document.getElementById("main-content").style.display = "block";
+
+    if (!f.isApproved) document.getElementById("pending-banner").style.display = "flex";
+    if (f.isVerified)  document.getElementById("verified-badge").style.display = "inline-flex";
+
+    const initials = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "?";
+    document.getElementById("profile-initials").textContent = initials;
+    document.getElementById("profile-name").textContent     = f.fullName;
+    document.getElementById("profile-cats").textContent     = (f.categoryIds||[]).join(" · ");
+    document.getElementById("profile-state").textContent    = f.state || "";
+    document.getElementById("nav-avatar").textContent       = initials;
+    document.getElementById("nav-name").textContent         = f.fullName?.split(" ")[0] || "Me";
+
+    const avail = document.getElementById("avail-select");
+    avail.value = f.availability || "available";
+    avail.className = "avail-select " + (f.availability || "available");
+
+    document.getElementById("prof-bio").textContent = f.bio || "No bio added yet.";
+    document.getElementById("stat-trust").textContent    = f.trustScore || "0";
+    document.getElementById("stat-projects").textContent = f.totalProjectsCompleted || "0";
+    document.getElementById("stat-ratings").textContent  = f.totalRatings || "0";
+    document.getElementById("prof-rate").textContent     = `RM ${f.rateMin||0}${f.rateMax?"–"+f.rateMax:"+"} ${f.rateType==="hourly"?"/ hour":"/ project"}`;
+
+    // Tags
+    const tagsEl = document.getElementById("prof-tags");
+    (f.tags||[]).forEach(t => {
+      const s = document.createElement("span");
+      s.className = "tag tag-brand"; s.textContent = t;
+      tagsEl.appendChild(s);
+    });
+
+    // Portfolio links
+    const links = document.getElementById("prof-links");
+    const portf = f.portfolioLinks || {};
+    if (portf.behance) links.innerHTML += `<a href="${portf.behance}" target="_blank" class="btn btn-outline btn-sm">Behance ↗</a>`;
+    if (portf.github)  links.innerHTML += `<a href="${portf.github}"  target="_blank" class="btn btn-outline btn-sm">GitHub ↗</a>`;
+    if (portf.website) links.innerHTML += `<a href="${portf.website}" target="_blank" class="btn btn-outline btn-sm">Website ↗</a>`;
+    if (!portf.behance && !portf.github && !portf.website) links.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem">No portfolio links added.</span>`;
+
+    // Edit form prefill
+    document.getElementById("edit-bio").value      = f.bio || "";
+    document.getElementById("edit-phone").value    = f.phone || "";
+    document.getElementById("edit-state").value    = f.state || "";
+    document.getElementById("edit-lang").value     = (f.languages||[]).join(", ");
+    document.getElementById("edit-rate-min").value = f.rateMin || "";
+    document.getElementById("edit-rate-max").value = f.rateMax || "";
+    document.getElementById("edit-behance").value  = portf.behance || "";
+    document.getElementById("edit-github").value   = portf.github  || "";
+    document.getElementById("edit-website").value  = portf.website || "";
+
+    // Payment display (public-facing fields only — no account number)
+    document.getElementById("payment-display").innerHTML = `
+      <div class="fl-detail-row" style="display:flex;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+        <span style="width:160px;min-width:160px;color:var(--text-muted);font-weight:500;font-size:.875rem">Bank</span>
+        <span style="font-size:.875rem">${f.bankName || "—"}</span>
+      </div>
+      <div class="fl-detail-row" style="display:flex;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+        <span style="width:160px;min-width:160px;color:var(--text-muted);font-weight:500;font-size:.875rem">Account name</span>
+        <span style="font-size:.875rem">${f.bankAccountName || "—"}</span>
+      </div>
+      <div class="fl-detail-row" style="display:flex;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border)">
+        <span style="width:160px;min-width:160px;color:var(--text-muted);font-weight:500;font-size:.875rem">Account number</span>
+        <span style="font-size:.875rem">•••• (hidden for security)</span>
+      </div>
+      <div class="fl-detail-row" style="display:flex;gap:.5rem;padding:.6rem 0">
+        <span style="width:160px;min-width:160px;color:var(--text-muted);font-weight:500;font-size:.875rem">DuitNow ID</span>
+        <span style="font-size:.875rem">${f.duitnowId || "—"}</span>
+      </div>
+      <p style="margin-top:1rem;font-size:.8rem;color:var(--text-muted)">To update payment details, please contact the admin directly.</p>
+    `;
+
+    // ── Availability update ────────────────────────
+    window.updateAvailability = async (val) => {
+      avail.className = "avail-select " + val;
+      try {
+        await updateDoc(doc(db, "freelancers", uid), { availability: val, updatedAt: serverTimestamp() });
+      } catch(e) { console.error(e); }
+    };
+
+    // ── Save profile edits ─────────────────────────
+    document.getElementById("btn-save").addEventListener("click", async () => {
+      const btn = document.getElementById("btn-save");
+      btn.disabled = true; btn.textContent = "Saving…";
+      try {
+        await updateDoc(doc(db, "freelancers", uid), {
+          bio:      document.getElementById("edit-bio").value.trim(),
+          phone:    document.getElementById("edit-phone").value.trim(),
+          state:    document.getElementById("edit-state").value,
+          languages: document.getElementById("edit-lang").value.split(",").map(s=>s.trim()),
+          rateMin:  parseFloat(document.getElementById("edit-rate-min").value)||0,
+          rateMax:  parseFloat(document.getElementById("edit-rate-max").value)||0,
+          portfolioLinks: {
+            behance: document.getElementById("edit-behance").value.trim(),
+            github:  document.getElementById("edit-github").value.trim(),
+            website: document.getElementById("edit-website").value.trim()
+          },
+          updatedAt: serverTimestamp()
+        });
+        const alert = document.getElementById("save-alert");
+        alert.innerHTML = `<div class="alert alert-success">✓ Profile updated successfully.</div>`;
+        alert.style.display = "block";
+        setTimeout(() => { alert.style.display="none"; }, 3000);
+      } catch(e) {
+        document.getElementById("save-alert").innerHTML = `<div class="alert alert-error">Error: ${e.message}</div>`;
+        document.getElementById("save-alert").style.display = "block";
+      }
+      btn.disabled = false; btn.textContent = "Save changes";
+    });
+  </script>
+</body>
+</html>
