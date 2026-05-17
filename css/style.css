@@ -2,10 +2,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --brand:        #1a6b4a;
-  --brand-dark:   #124d36;
-  --brand-light:  #e8f5ef;
-  --brand-mid:    #2d9469;
+  --brand:        #7c6fff;
+  --brand-dark:   #5b4fe0;
+  --brand-light:  #f0eeff;
+  --brand-mid:    #9d8fff;
   --accent:       #f59e0b;
   --accent-light: #fef3c7;
   --text-primary: #111827;
@@ -14,7 +14,7 @@
   --bg:           #f9fafb;
   --surface:      #ffffff;
   --border:       #e5e7eb;
-  --border-focus: #1a6b4a;
+  --border-focus: #7c6fff;
   --danger:       #dc2626;
   --danger-light: #fee2e2;
   --success:      #16a34a;

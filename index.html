@@ -68,7 +68,7 @@
     </div>
 
     <div class="register-link">
-      Are you a freelancer? <a href="register.html">Create an account →</a>
+      New here? <a href="register.html">Create a freelancer account →</a>
     </div>
   </div>
 
@@ -138,12 +138,28 @@
       try {
         const provider = new GoogleAuthProvider();
         const cred = await signInWithPopup(auth, provider);
-        // Check if user doc exists; if not, they need to register
         const snap = await getDoc(doc(db, "users", cred.user.uid));
         if (!snap.exists()) {
-          showAlert("No account found. If you're a freelancer, please register first.", "info");
-          await auth.signOut();
-          setLoading(false);
+          // New Google user — create account and send to settings
+          const { setDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js");
+          await setDoc(doc(db, "users", cred.user.uid), {
+            uid: cred.user.uid, email: cred.user.email,
+            displayName: cred.user.displayName || "Freelancer",
+            photoURL: cred.user.photoURL || "", role: "freelancer",
+            isApproved: false, isActive: true, profileComplete: false,
+            createdAt: serverTimestamp(), lastLoginAt: serverTimestamp()
+          });
+          await setDoc(doc(db, "freelancers", cred.user.uid), {
+            fullName: cred.user.displayName || "Freelancer",
+            phone:"",state:"",bio:"",languages:[],categoryIds:[],tags:[],
+            experienceLevel:"",portfolioLinks:{behance:"",github:"",website:""},
+            availability:"available",preferredProjectType:[],rateType:"per_project",
+            rateMin:0,rateMax:0,minProjectBudget:0,bankName:"",bankAccountName:"",
+            duitnowId:"",ssm:"",trustScore:0,totalProjectsCompleted:0,totalRatings:0,
+            isVerified:false,isApproved:false,profileComplete:false,photoURL:"",
+            createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+          });
+          window.location.href = "settings.html";
           return;
         }
         await redirectByRole(cred.user.uid);

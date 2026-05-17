@@ -3,470 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RosterMY — Register as Freelancer</title>
+  <title>RosterMY — Create Account</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .reg-wrap  { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem; }
-    .reg-header { text-align: center; margin-bottom: 2rem; }
-    .step-bar   { display: flex; gap: .5rem; margin-bottom: 2rem; }
-    .step-item  { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background .3s; }
-    .step-item.done   { background: var(--brand); }
-    .step-item.active { background: var(--brand-mid); }
-    .step-title { font-size: .8rem; color: var(--text-muted); margin-bottom: 1.25rem; font-weight: 500; }
-    .section-heading { font-size: .75rem; font-weight: 600; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .06em; margin-bottom: .85rem;
-      padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+    .reg-wrap { width:100%; max-width:440px; padding:1.25rem; }
+    .reg-brand { text-align:center; margin-bottom:2rem; }
+    .logo { width:52px; height:52px; background:var(--brand); border-radius:14px;
+      display:flex; align-items:center; justify-content:center; margin:0 auto .75rem; }
+    .logo svg { width:28px; height:28px; fill:white; }
+    .btn-google {
+      width:100%; display:flex; align-items:center; justify-content:center; gap:.65rem;
+      padding:.65rem 1rem; border:1px solid var(--border); border-radius:var(--radius);
+      background:white; font-size:.9rem; font-weight:500; cursor:pointer;
+      color:var(--text-primary); transition:background .15s; font-family:var(--font); margin-bottom:.75rem;
+    }
+    .btn-google:hover { background:var(--bg); }
+    .btn-google img { width:18px; height:18px; }
+    .or-divider { display:flex; align-items:center; gap:.75rem; color:var(--text-muted);
+      font-size:.8rem; margin:.85rem 0; }
+    .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .back-link { text-align:center; margin-top:1rem; font-size:.875rem; color:var(--text-muted); }
+    .back-link a { color:var(--brand); text-decoration:none; font-weight:500; }
   </style>
 </head>
 <body>
-  <div class="reg-wrap">
-    <div class="reg-header">
-      <a href="index.html" style="text-decoration:none;color:var(--text-muted);font-size:.875rem">← Back to login</a>
-      <h1 style="margin-top:.75rem">Join RosterMY</h1>
-      <p style="margin-top:.25rem">Create your freelancer profile to get discovered for projects</p>
+<div class="reg-wrap">
+  <div class="reg-brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
     </div>
+    <h1 style="font-size:1.5rem">Join RosterMY</h1>
+    <p style="margin-top:.25rem;font-size:.875rem">Create your account — you can complete your profile after.</p>
+  </div>
 
-    <!-- Step progress -->
-    <div class="step-bar">
-      <div class="step-item active" id="s1"></div>
-      <div class="step-item" id="s2"></div>
-      <div class="step-item" id="s3"></div>
-    </div>
-
+  <div class="card">
     <div id="alert-box" style="display:none;margin-bottom:1rem"></div>
 
-    <div class="card">
+    <button class="btn-google" id="btn-google">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
+      Continue with Google
+    </button>
 
-      <!-- ── Step 1: Account ── -->
-      <div id="step-1">
-        <div class="step-title">Step 1 of 3 — Account details</div>
+    <div class="or-divider">or sign up with email</div>
 
-        <div class="section-heading">Login credentials</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="email">Email address <span class="req">*</span></label>
-            <input type="email" id="email" placeholder="ali@email.com">
-          </div>
-          <div class="form-group">
-            <label for="phone">Phone number <span class="req">*</span></label>
-            <input type="tel" id="phone" placeholder="+601X-XXXXXXX">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="password">Password <span class="req">*</span></label>
-            <input type="password" id="password" placeholder="Min. 8 characters">
-            <span class="form-hint">At least 8 characters</span>
-          </div>
-          <div class="form-group">
-            <label for="password2">Confirm password <span class="req">*</span></label>
-            <input type="password" id="password2" placeholder="Repeat password">
-          </div>
-        </div>
-
-        <div class="section-heading" style="margin-top:1rem">Personal info</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="fullname">Full name (as per IC) <span class="req">*</span></label>
-            <input type="text" id="fullname" placeholder="Muhammad Ali bin Hassan">
-          </div>
-          <div class="form-group">
-            <label for="state">State <span class="req">*</span></label>
-            <select id="state">
-              <option value="">Select state…</option>
-              <option>Kuala Lumpur</option><option>Selangor</option>
-              <option>Penang</option><option>Johor</option>
-              <option>Perak</option><option>Kedah</option>
-              <option>Kelantan</option><option>Terengganu</option>
-              <option>Pahang</option><option>Negeri Sembilan</option>
-              <option>Melaka</option><option>Perlis</option>
-              <option>Sabah</option><option>Sarawak</option>
-              <option>Putrajaya</option><option>Labuan</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="bio">Short bio <span class="req">*</span></label>
-          <textarea id="bio" placeholder="Tell us about yourself — your background, what you do, and what kind of projects you enjoy…" rows="3"></textarea>
-          <span class="form-hint">Keep it to 2–3 sentences.</span>
-        </div>
-
-        <div style="margin-top:1.5rem;display:flex;justify-content:flex-end">
-          <button class="btn btn-primary" id="btn-next1">Next: Skills & Experience →</button>
-        </div>
-      </div>
-
-      <!-- ── Step 2: Skills ── -->
-      <div id="step-2" style="display:none">
-        <div class="step-title">Step 2 of 3 — Skills & experience</div>
-
-        <div class="section-heading">Categories</div>
-        <p style="font-size:.875rem;margin-bottom:.85rem">Select all that apply.</p>
-        <div class="tag-picker" id="cat-picker">
-          <span class="tag-pill" data-val="design">🎨 Graphic Design</span>
-          <span class="tag-pill" data-val="uiux">🖥️ UI/UX Design</span>
-          <span class="tag-pill" data-val="frontend">💻 Front-end Dev</span>
-          <span class="tag-pill" data-val="backend">⚙️ Back-end Dev</span>
-          <span class="tag-pill" data-val="fullstack">🔧 Full-stack Dev</span>
-          <span class="tag-pill" data-val="mobile">📱 Mobile Dev</span>
-          <span class="tag-pill" data-val="devops">☁️ DevOps / Cloud</span>
-          <span class="tag-pill" data-val="copywriting">✍️ Copywriting</span>
-          <span class="tag-pill" data-val="video">🎬 Video / Motion</span>
-          <span class="tag-pill" data-val="photo">📷 Photography</span>
-          <span class="tag-pill" data-val="social">📣 Social Media</span>
-          <span class="tag-pill" data-val="seo">🔍 SEO / Marketing</span>
-        </div>
-
-        <div class="section-heading" style="margin-top:1.5rem">Skills / Tools</div>
-        <div class="form-group">
-          <label for="tags-input">Add skills</label>
-          <input type="text" id="tags-input" placeholder="Type a skill and press Enter (e.g. Figma, React, Laravel)">
-          <span class="form-hint">Press Enter or comma to add each skill.</span>
-        </div>
-        <div class="tag-picker" id="tags-output" style="margin-top:.25rem"></div>
-
-        <div class="form-row" style="margin-top:1.25rem">
-          <div class="form-group">
-            <label for="exp-level">Experience level <span class="req">*</span></label>
-            <select id="exp-level">
-              <option value="">Select…</option>
-              <option value="junior">Junior (0–2 years)</option>
-              <option value="mid">Mid (3–5 years)</option>
-              <option value="senior">Senior (6+ years)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="lang">Languages spoken <span class="req">*</span></label>
-            <input type="text" id="lang" placeholder="e.g. Bahasa Malaysia, English">
-          </div>
-        </div>
-
-        <div class="section-heading" style="margin-top:1rem">Portfolio links</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="link-behance">Behance</label>
-            <input type="url" id="link-behance" placeholder="https://behance.net/…">
-          </div>
-          <div class="form-group">
-            <label for="link-github">GitHub</label>
-            <input type="url" id="link-github" placeholder="https://github.com/…">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="link-web">Personal website</label>
-          <input type="url" id="link-web" placeholder="https://yoursite.com">
-        </div>
-
-        <div style="margin-top:1.5rem;display:flex;justify-content:space-between">
-          <button class="btn btn-ghost" id="btn-back2">← Back</button>
-          <button class="btn btn-primary" id="btn-next2">Next: Rates & Payment →</button>
-        </div>
-      </div>
-
-      <!-- ── Step 3: Rates & Payment ── -->
-      <div id="step-3" style="display:none">
-        <div class="step-title">Step 3 of 3 — Rates & payment</div>
-
-        <div class="section-heading">Your rates (RM)</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="rate-type">Rate type <span class="req">*</span></label>
-            <select id="rate-type">
-              <option value="hourly">Hourly (per hour)</option>
-              <option value="per_project">Per project (fixed)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="min-budget">Minimum project budget (RM)</label>
-            <input type="number" id="min-budget" placeholder="e.g. 500" min="0">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="rate-min">Rate from (RM) <span class="req">*</span></label>
-            <input type="number" id="rate-min" placeholder="e.g. 50" min="0">
-          </div>
-          <div class="form-group">
-            <label for="rate-max">Rate to (RM)</label>
-            <input type="number" id="rate-max" placeholder="e.g. 150" min="0">
-          </div>
-        </div>
-
-        <div class="section-heading" style="margin-top:1rem">Preferred project types</div>
-        <div class="tag-picker" id="proj-type-picker">
-          <span class="tag-pill" data-val="short_gig">Short gig (1–2 weeks)</span>
-          <span class="tag-pill" data-val="one_off">One-off project</span>
-          <span class="tag-pill" data-val="retainer">Monthly retainer</span>
-          <span class="tag-pill" data-val="contract">Long-term contract</span>
-        </div>
-
-        <div class="section-heading" style="margin-top:1.5rem">Payment details</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="bank-name">Bank name <span class="req">*</span></label>
-            <select id="bank-name">
-              <option value="">Select bank…</option>
-              <option>Maybank</option><option>CIMB Bank</option>
-              <option>Public Bank</option><option>RHB Bank</option>
-              <option>Hong Leong Bank</option><option>AmBank</option>
-              <option>Bank Islam</option><option>Bank Rakyat</option>
-              <option>BSN</option><option>Affin Bank</option>
-              <option>Alliance Bank</option><option>OCBC Bank</option>
-              <option>Standard Chartered</option><option>Other</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="bank-acc-name">Account name <span class="req">*</span></label>
-            <input type="text" id="bank-acc-name" placeholder="As per bank account">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="bank-acc-num">Account number <span class="req">*</span></label>
-            <input type="text" id="bank-acc-num" placeholder="e.g. 1234567890">
-            <span class="form-hint">Stored securely, only visible to admin.</span>
-          </div>
-          <div class="form-group">
-            <label for="duitnow">DuitNow ID (optional)</label>
-            <input type="text" id="duitnow" placeholder="Phone number or IC number">
-          </div>
-        </div>
-
-        <div class="section-heading" style="margin-top:1rem">SSM (optional)</div>
-        <div class="form-group">
-          <label for="ssm">SSM registration number</label>
-          <input type="text" id="ssm" placeholder="e.g. 202301012345 (12 digits)">
-          <span class="form-hint">Only needed if you operate as a sole proprietor or company.</span>
-        </div>
-
-        <div style="margin-top:.75rem;padding:.85rem;background:var(--brand-light);border-radius:var(--radius);font-size:.825rem;color:var(--brand-dark)">
-          🔒 Your bank details are stored securely and only accessible by the admin. They will never be shared publicly.
-        </div>
-
-        <div style="margin-top:1.5rem;display:flex;justify-content:space-between">
-          <button class="btn btn-ghost" id="btn-back3">← Back</button>
-          <button class="btn btn-primary btn-lg" id="btn-submit">
-            Submit application
-          </button>
-        </div>
-      </div>
-
+    <div class="form-group">
+      <label for="fullname">Full name <span class="req">*</span></label>
+      <input type="text" id="fullname" placeholder="Muhammad Ali bin Hassan" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label for="email">Email address <span class="req">*</span></label>
+      <input type="email" id="email" placeholder="you@email.com" autocomplete="email">
+    </div>
+    <div class="form-group" style="margin-bottom:1.25rem">
+      <label for="password">Password <span class="req">*</span></label>
+      <input type="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password">
     </div>
 
-    <p style="text-align:center;font-size:.8rem;color:var(--text-muted);margin-top:1.25rem">
-      By registering, you agree to our terms of service. Your profile will be reviewed before activation.
+    <button class="btn btn-primary btn-block btn-lg" id="btn-register">Create account</button>
+
+    <p style="font-size:.78rem;color:var(--text-muted);text-align:center;margin-top:.85rem">
+      By signing up, you agree to our terms of service.
     </p>
   </div>
 
-  <script type="module">
-    import { auth, db } from "./firebase.js";
-    import {
-      createUserWithEmailAndPassword,
-      updateProfile
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-    import {
-      doc, setDoc, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+  <div class="back-link">Already have an account? <a href="index.html">Sign in →</a></div>
+</div>
 
-    // ── State ──────────────────────────────────────
-    let currentStep = 1;
-    let selectedCategories = [];
-    let selectedTags       = [];
-    let selectedProjTypes  = [];
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import {
+    createUserWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    updateProfile
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import { doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-    // ── Step navigation ────────────────────────────
-    function goTo(step) {
-      document.getElementById(`step-${currentStep}`).style.display = "none";
-      document.getElementById(`step-${step}`).style.display = "block";
-      ["s1","s2","s3"].forEach((id, i) => {
-        const el = document.getElementById(id);
-        el.className = "step-item" + (i + 1 < step ? " done" : i + 1 === step ? " active" : "");
-      });
-      currentStep = step;
-      window.scrollTo(0, 0);
-    }
+  const alertBox  = document.getElementById("alert-box");
+  const btnReg    = document.getElementById("btn-register");
+  const btnGoogle = document.getElementById("btn-google");
 
-    // ── Tag pickers ────────────────────────────────
-    function initPicker(containerId, stateArr) {
-      document.getElementById(containerId).querySelectorAll(".tag-pill").forEach(pill => {
-        pill.addEventListener("click", () => {
-          const val = pill.dataset.val;
-          pill.classList.toggle("selected");
-          if (pill.classList.contains("selected")) stateArr.push(val);
-          else stateArr.splice(stateArr.indexOf(val), 1);
-        });
-      });
-    }
-    initPicker("cat-picker",       selectedCategories);
-    initPicker("proj-type-picker", selectedProjTypes);
+  function showAlert(msg, type="error") {
+    alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    alertBox.style.display = "block";
+  }
+  function setLoading(on) {
+    btnReg.disabled = btnGoogle.disabled = on;
+    btnReg.textContent = on ? "Creating account…" : "Create account";
+  }
 
-    // ── Free-text skill tags ───────────────────────
-    const tagsInput  = document.getElementById("tags-input");
-    const tagsOutput = document.getElementById("tags-output");
+  async function createUserDocs(uid, displayName, email) {
+    const existing = await getDoc(doc(db, "users", uid));
+    if (existing.exists()) { window.location.href = "profile.html"; return; }
 
-    function addTag(val) {
-      val = val.trim().toLowerCase();
-      if (!val || selectedTags.includes(val)) return;
-      selectedTags.push(val);
-      const pill = document.createElement("span");
-      pill.className = "tag-pill selected";
-      pill.textContent = val;
-      pill.addEventListener("click", () => {
-        selectedTags.splice(selectedTags.indexOf(val), 1);
-        pill.remove();
-      });
-      tagsOutput.appendChild(pill);
-    }
-
-    tagsInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === ",") {
-        e.preventDefault();
-        addTag(tagsInput.value.replace(",",""));
-        tagsInput.value = "";
-      }
+    await setDoc(doc(db, "users", uid), {
+      uid, email, displayName, photoURL: "",
+      role: "freelancer",
+      isApproved: false, isActive: true, profileComplete: false,
+      createdAt: serverTimestamp(), lastLoginAt: serverTimestamp()
     });
+    await setDoc(doc(db, "freelancers", uid), {
+      fullName: displayName, phone: "", state: "", bio: "",
+      languages: [], categoryIds: [], tags: [], experienceLevel: "",
+      portfolioLinks: { behance:"", github:"", website:"" },
+      availability: "available", preferredProjectType: [],
+      rateType: "per_project", rateMin: 0, rateMax: 0, minProjectBudget: 0,
+      bankName: "", bankAccountName: "", duitnowId: "", ssm: "",
+      trustScore: 0, totalProjectsCompleted: 0, totalRatings: 0,
+      isVerified: false, isApproved: false, profileComplete: false, photoURL: "",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    window.location.href = "settings.html";
+  }
 
-    // ── Alert helper ───────────────────────────────
-    function showAlert(msg, type = "error") {
-      const box = document.getElementById("alert-box");
-      box.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-      box.style.display = "block";
-      box.scrollIntoView({ behavior: "smooth" });
+  btnReg.addEventListener("click", async () => {
+    const name  = document.getElementById("fullname").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const pass  = document.getElementById("password").value;
+    if (!name)           return showAlert("Please enter your full name.");
+    if (!email)          return showAlert("Please enter your email address.");
+    if (pass.length < 8) return showAlert("Password must be at least 8 characters.");
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+      await createUserDocs(cred.user.uid, name, email);
+    } catch(e) {
+      const msgs = {
+        "auth/email-already-in-use": "This email is already registered. <a href='index.html'>Sign in instead?</a>",
+        "auth/weak-password": "Password is too weak.",
+        "auth/invalid-email": "Please enter a valid email address."
+      };
+      showAlert(msgs[e.code] || "Registration failed: " + e.message);
+      setLoading(false);
     }
-    function clearAlert() {
-      document.getElementById("alert-box").style.display = "none";
+  });
+
+  btnGoogle.addEventListener("click", async () => {
+    setLoading(true);
+    try {
+      const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+      await createUserDocs(cred.user.uid, cred.user.displayName || "Freelancer", cred.user.email);
+    } catch(e) {
+      if (e.code !== "auth/popup-closed-by-user") showAlert("Google sign-up failed. Please try again.");
+      setLoading(false);
     }
+  });
 
-    // ── Step 1 validation ──────────────────────────
-    document.getElementById("btn-next1").addEventListener("click", () => {
-      clearAlert();
-      const email    = document.getElementById("email").value.trim();
-      const phone    = document.getElementById("phone").value.trim();
-      const password = document.getElementById("password").value;
-      const password2= document.getElementById("password2").value;
-      const fullname = document.getElementById("fullname").value.trim();
-      const state    = document.getElementById("state").value;
-      const bio      = document.getElementById("bio").value.trim();
-
-      if (!email || !phone || !password || !fullname || !state || !bio) {
-        return showAlert("Please fill in all required fields.");
-      }
-      if (password.length < 8) return showAlert("Password must be at least 8 characters.");
-      if (password !== password2) return showAlert("Passwords do not match.");
-      goTo(2);
-    });
-
-    // ── Step 2 validation ──────────────────────────
-    document.getElementById("btn-next2").addEventListener("click", () => {
-      clearAlert();
-      if (!selectedCategories.length) return showAlert("Please select at least one category.");
-      if (!document.getElementById("exp-level").value) return showAlert("Please select your experience level.");
-      if (!document.getElementById("lang").value.trim()) return showAlert("Please enter languages you speak.");
-      goTo(3);
-    });
-
-    document.getElementById("btn-back2").addEventListener("click", () => goTo(1));
-    document.getElementById("btn-back3").addEventListener("click", () => goTo(2));
-
-    // ── Step 3 submit ──────────────────────────────
-    document.getElementById("btn-submit").addEventListener("click", async () => {
-      clearAlert();
-      const bankName   = document.getElementById("bank-name").value;
-      const bankAccName= document.getElementById("bank-acc-name").value.trim();
-      const bankAccNum = document.getElementById("bank-acc-num").value.trim();
-      const rateMin    = document.getElementById("rate-min").value;
-
-      if (!bankName || !bankAccName || !bankAccNum || !rateMin) {
-        return showAlert("Please fill in all required payment and rate fields.");
-      }
-
-      const btn = document.getElementById("btn-submit");
-      btn.disabled = true;
-      btn.textContent = "Submitting…";
-
-      const email    = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const fullname = document.getElementById("fullname").value.trim();
-
-      try {
-        // 1. Create Firebase Auth user
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const uid  = cred.user.uid;
-        await updateProfile(cred.user, { displayName: fullname });
-
-        // 2. Create /users doc
-        await setDoc(doc(db, "users", uid), {
-          uid,
-          email,
-          displayName: fullname,
-          photoURL: "",
-          role: "freelancer",
-          isApproved: false,
-          isActive: true,
-          createdAt: serverTimestamp(),
-          lastLoginAt: serverTimestamp()
-        });
-
-        // 3. Create /freelancers doc
-        await setDoc(doc(db, "freelancers", uid), {
-          fullName:       fullname,
-          phone:          document.getElementById("phone").value.trim(),
-          state:          document.getElementById("state").value,
-          bio:            document.getElementById("bio").value.trim(),
-          languages:      document.getElementById("lang").value.split(",").map(s => s.trim()),
-          categoryIds:    selectedCategories,
-          tags:           selectedTags,
-          experienceLevel: document.getElementById("exp-level").value,
-          portfolioLinks: {
-            behance: document.getElementById("link-behance").value.trim(),
-            github:  document.getElementById("link-github").value.trim(),
-            website: document.getElementById("link-web").value.trim()
-          },
-          availability:       "available",
-          preferredProjectType: selectedProjTypes,
-          rateType:           document.getElementById("rate-type").value,
-          rateMin:            parseFloat(rateMin) || 0,
-          rateMax:            parseFloat(document.getElementById("rate-max").value) || 0,
-          minProjectBudget:   parseFloat(document.getElementById("min-budget").value) || 0,
-          bankName,
-          bankAccountName:    bankAccName,
-          duitnowId:          document.getElementById("duitnow").value.trim(),
-          ssm:                document.getElementById("ssm").value.trim(),
-          trustScore:         0,
-          totalProjectsCompleted: 0,
-          totalRatings:       0,
-          isVerified:         false,
-          isApproved:         false,
-          photoURL:           "",
-          createdAt:          serverTimestamp(),
-          updatedAt:          serverTimestamp()
-        });
-
-        // 4. Bank details in private subcollection
-        await setDoc(doc(db, "freelancers", uid, "private", "bankDetails"), {
-          bankName,
-          bankAccountName: bankAccName,
-          bankAccountNumber: bankAccNum,
-          duitnowId: document.getElementById("duitnow").value.trim(),
-          updatedAt: serverTimestamp()
-        });
-
-        // 5. Done — redirect to a waiting page
-        window.location.href = "pending.html";
-
-      } catch (e) {
-        const msgs = {
-          "auth/email-already-in-use": "This email is already registered. <a href='index.html'>Sign in instead?</a>",
-          "auth/weak-password": "Password is too weak. Use at least 8 characters.",
-          "auth/invalid-email": "Please enter a valid email address."
-        };
-        showAlert(msgs[e.code] || `Registration failed: ${e.message}`);
-        btn.disabled = false;
-        btn.textContent = "Submit application";
-      }
-    });
-  </script>
+  ["fullname","email","password"].forEach(id =>
+    document.getElementById(id).addEventListener("keydown", e => { if(e.key==="Enter") btnReg.click(); })
+  );
+</script>
 </body>
 </html>
