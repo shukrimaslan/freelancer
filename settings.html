@@ -87,8 +87,9 @@
       gengstr
     </a>
     <div class="navbar-nav">
-      <a href="profile.html" class="nav-link">My Profile</a>
-      <a href="settings.html" class="nav-link active">Settings</a>
+      <a href="profile.html"     class="nav-link">My Profile</a>
+      <a href="invitations.html" class="nav-link">Invitations</a>
+      <a href="settings.html"    class="nav-link active">Settings</a>
     </div>
     <div class="nav-user">
       <div class="avatar" id="nav-avatar">F</div>
@@ -233,20 +234,7 @@
             <p>Select all service categories you offer.</p>
           </div>
           <div class="tag-picker" id="cat-picker">
-            <span class="tag-pill" data-val="design">🎨 Graphic Design</span>
-            <span class="tag-pill" data-val="uiux">🖥️ UI/UX Design</span>
-            <span class="tag-pill" data-val="frontend">💻 Front-end Dev</span>
-            <span class="tag-pill" data-val="backend">⚙️ Back-end Dev</span>
-            <span class="tag-pill" data-val="fullstack">🔧 Full-stack Dev</span>
-            <span class="tag-pill" data-val="mobile">📱 Mobile Dev</span>
-            <span class="tag-pill" data-val="devops">☁️ DevOps / Cloud</span>
-            <span class="tag-pill" data-val="copywriting">✍️ Copywriting</span>
-            <span class="tag-pill" data-val="video">🎬 Video / Motion</span>
-            <span class="tag-pill" data-val="photo">📷 Photography</span>
-            <span class="tag-pill" data-val="social">📣 Social Media</span>
-            <span class="tag-pill" data-val="seo">🔍 SEO / Marketing</span>
-            <span class="tag-pill" data-val="pm">📋 Project Mgmt</span>
-            <span class="tag-pill" data-val="data">📊 Data / Analytics</span>
+            <span style="color:var(--text-muted);font-size:.875rem">Loading categories…</span>
           </div>
         </div>
 
@@ -425,7 +413,7 @@
   import { guardAuth } from "./auth.js";
   import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import {
-    doc, getDoc, setDoc, updateDoc, serverTimestamp
+    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const { user, userData } = await guardAuth(["freelancer"]);
@@ -447,23 +435,10 @@
     });
   });
 
-  // ── Tag pickers ───────────────────────────────
+  // ── State ─────────────────────────────────────
   let selCategories = [], selProjTypes = [], selSkills = [];
 
-  function initPicker(id, arr) {
-    document.querySelectorAll(`#${id} .tag-pill`).forEach(p => {
-      p.addEventListener("click", ()=>{
-        p.classList.toggle("selected");
-        const v = p.dataset.val;
-        p.classList.contains("selected") ? arr.push(v) : arr.splice(arr.indexOf(v),1);
-        updateProgress();
-      });
-    });
-  }
-  initPicker("cat-picker",      selCategories);
-  initPicker("projtype-picker", selProjTypes);
-
-  // Skills free-text
+  // ── Skills free-text ──────────────────────────
   const skillsInput = document.getElementById("skills-input");
   const skillsOut   = document.getElementById("skills-output");
   function addSkill(val) {
@@ -480,11 +455,23 @@
     if(e.key==="Enter"||e.key===","){e.preventDefault();addSkill(skillsInput.value.replace(",",""));skillsInput.value="";}
   });
 
-  // Language checkboxes
+  // ── Project type picker ───────────────────────
+  function initStaticPicker(id, arr) {
+    document.querySelectorAll(`#${id} .tag-pill`).forEach(p => {
+      p.addEventListener("click", ()=>{
+        p.classList.toggle("selected");
+        const v = p.dataset.val;
+        p.classList.contains("selected") ? arr.push(v) : arr.splice(arr.indexOf(v),1);
+        updateProgress();
+      });
+    });
+  }
+  initStaticPicker("projtype-picker", selProjTypes);
+
+  // ── Language checkboxes ───────────────────────
   document.querySelectorAll(".lang-item").forEach(item=>{
     item.addEventListener("click", ()=>{
       const cb = item.querySelector("input");
-      // click on label toggles checkbox automatically, just update style
       setTimeout(()=>{
         item.classList.toggle("selected", cb.checked);
         updateProgress();
@@ -499,11 +486,42 @@
     return [...checked, ...extras];
   }
 
-  // ── Load existing data ────────────────────────
+  // ── Load categories from Firestore ────────────
+  // FIX: was hardcoded HTML; now loaded live so admin changes are reflected
+  async function loadCategories(savedCategoryIds) {
+    const snap = await getDocs(query(collection(db,"categories"), orderBy("name")));
+    const cats  = [];
+    snap.forEach(d => cats.push({id:d.id,...d.data()}));
+
+    const picker = document.getElementById("cat-picker");
+    if (!cats.length) {
+      picker.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem">No categories set up yet. Contact admin.</span>`;
+      return;
+    }
+
+    picker.innerHTML = cats.map(c =>
+      `<span class="tag-pill${savedCategoryIds.includes(c.id)?" selected":""}" data-val="${c.id}">${c.icon||"📁"} ${c.name}</span>`
+    ).join("");
+
+    // Pre-populate selCategories from saved data
+    selCategories = cats.filter(c=>savedCategoryIds.includes(c.id)).map(c=>c.id);
+
+    // Bind click events
+    picker.querySelectorAll(".tag-pill").forEach(p => {
+      p.addEventListener("click", ()=>{
+        p.classList.toggle("selected");
+        const v = p.dataset.val;
+        p.classList.contains("selected") ? selCategories.push(v) : selCategories.splice(selCategories.indexOf(v),1);
+        updateProgress();
+      });
+    });
+  }
+
+  // ── Load all data ─────────────────────────────
   const snap = await getDoc(doc(db, "freelancers", uid));
   const f    = snap.data() || {};
 
-  // Personal
+  // Personal fields
   document.getElementById("p-fullname").value = f.fullName || userData.displayName || "";
   document.getElementById("p-phone").value    = f.phone || "";
   document.getElementById("p-state").value    = f.state || "";
@@ -512,12 +530,12 @@
   document.getElementById("p-github").value   = f.portfolioLinks?.github  || "";
   document.getElementById("p-website").value  = f.portfolioLinks?.website || "";
 
-  // Languages — check boxes
+  // Languages
   const savedLangs = f.languages || [];
   const knownLangs = ["Bahasa Malaysia","English","Mandarin","Tamil","Arabic","Japanese","Korean","French"];
   const otherLangs = savedLangs.filter(l=>!knownLangs.includes(l));
   document.querySelectorAll(".lang-item input").forEach(cb=>{
-    if(savedLangs.includes(cb.value)){cb.checked=true;cb.closest(".lang-item").classList.add("selected");}
+    if(savedLangs.includes(cb.value)){ cb.checked=true; cb.closest(".lang-item").classList.add("selected"); }
   });
   if(otherLangs.length) document.getElementById("lang-other").value = otherLangs.join(", ");
 
@@ -526,18 +544,11 @@
   (f.tags||[]).forEach(t=>addSkill(t));
   document.getElementById("p-exp").value = f.experienceLevel || "";
 
-  // Categories
-  selCategories = [];
-  (f.categoryIds||[]).forEach(v=>{
-    const p = document.querySelector(`#cat-picker [data-val="${v}"]`);
-    if(p){p.classList.add("selected");selCategories.push(v);}
-  });
-
   // Project types
   selProjTypes = [];
   (f.preferredProjectType||[]).forEach(v=>{
     const p = document.querySelector(`#projtype-picker [data-val="${v}"]`);
-    if(p){p.classList.add("selected");selProjTypes.push(v);}
+    if(p){ p.classList.add("selected"); selProjTypes.push(v); }
   });
 
   // Rates
@@ -551,8 +562,6 @@
   document.getElementById("pay-accname").value = f.bankAccountName || "";
   document.getElementById("pay-duitnow").value = f.duitnowId || "";
   document.getElementById("pay-ssm").value     = f.ssm || "";
-
-  // Private bank details
   try {
     const privSnap = await getDoc(doc(db,"freelancers",uid,"private","bankDetails"));
     if(privSnap.exists()) document.getElementById("pay-accnum").value = privSnap.data().bankAccountNumber || "";
@@ -561,13 +570,16 @@
   // Account tab
   document.getElementById("acc-email").value = user.email || "";
   document.getElementById("acc-since").value = userData.createdAt?.toDate
-    ? userData.createdAt.toDate().toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"})
-    : "—";
+    ? userData.createdAt.toDate().toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"}) : "—";
   document.getElementById("acc-status-box").innerHTML = userData.isApproved
     ? `<span class="tag tag-green">✓ Approved — you can receive project invitations</span>`
     : `<div class="alert alert-info">⏳ Your account is pending admin approval. You'll be notified by email once activated.</div>`;
 
+  // FIX: Load categories from Firestore THEN call updateProgress so saved selections show correctly
+  await loadCategories(f.categoryIds || []);
+
   // ── Progress tracker ──────────────────────────
+  // FIX: defined after all data is loaded so done() checks see real values
   const steps = [
     { label:"Name & bio",    done:()=> !!(document.getElementById("p-fullname").value && document.getElementById("p-bio").value) },
     { label:"Phone & state", done:()=> !!(document.getElementById("p-phone").value && document.getElementById("p-state").value) },
@@ -590,7 +602,9 @@
       </span>`
     ).join("");
     if(pct===100) document.getElementById("progress-banner").style.background="var(--success-light)";
+    else document.getElementById("progress-banner").style.background="";
   }
+  // FIX: called once after ALL data (including categories) is loaded
   updateProgress();
 
   // ── Toast helper ──────────────────────────────
