@@ -523,15 +523,20 @@
   }
 
   function renderInviteTab(p) {
-    // Filter approved freelancers not yet invited
-    const alreadyInvited = invitations.filter(i=>i.projectId===p.id).map(i=>i.freelancerId);
+    // Build a map of freelancerId → latest invitation for this project
+    const invMap = {};
+    invitations
+      .filter(i=>i.projectId===p.id)
+      .sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0))
+      .forEach(i=>{ if(!invMap[i.freelancerId]) invMap[i.freelancerId]=i; });
+
     let list = freelancers.filter(f=>f.availability!=="busy");
 
-    // Show category match first
+    // Sort: category match first, then alphabetical
     list.sort((a,b)=>{
       const aMatch = (a.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c)) ? 1:0;
       const bMatch = (b.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c)) ? 1:0;
-      return bMatch-aMatch;
+      return bMatch-aMatch || (a.fullName||"").localeCompare(b.fullName||"");
     });
 
     const el = document.getElementById("dtab-invite");
@@ -543,22 +548,40 @@
       </div>
       <div id="invite-list">
         ${list.map(f=>{
-          const init   = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
-          const invited= alreadyInvited.includes(f.id);
-          const avail  = {available:"🟢 Available",open_to_offers:"🟡 Open",busy:"🔴 Busy"}[f.availability]||"";
-          const match  = (f.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c));
+          const init  = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
+          const avail = {available:"🟢 Available",open_to_offers:"🟡 Open",busy:"🔴 Busy"}[f.availability]||"";
+          const match = (f.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c));
+          const inv   = invMap[f.id]; // latest invitation for this freelancer on this project
+          const status= inv?.status;
+
+          // Determine right-side action
+          let action;
+          if (!inv || ["declined","expired","cancelled"].includes(status)) {
+            // No invite yet, or can be re-invited
+            const isReinvite = !!inv;
+            action = `<button class="btn btn-${isReinvite?"outline":"primary"} btn-sm"
+              onclick="${isReinvite?"reInviteFromProject":"sendInvite"}('${p.id}','${f.id}','${(f.fullName||"").replace(/'/g,"\\'")}')">
+              ${isReinvite?"↩ Re-invite":"Invite"}
+            </button>`;
+          } else if (status==="pending") {
+            action = `<span class="tag tag-amber" style="font-size:.78rem">⏳ Pending</span>`;
+          } else if (status==="accepted") {
+            action = `<span class="tag tag-green" style="font-size:.78rem">✓ Accepted</span>`;
+          } else {
+            action = `<span class="tag tag-gray" style="font-size:.78rem">${status}</span>`;
+          }
+
           return `<div class="fl-invite-row" id="irow-${f.id}">
             <div class="fl-invite-info">
               <div class="fl-mini-avatar">${init}</div>
               <div>
-                <div style="font-size:.875rem;font-weight:600">${f.fullName} ${match?'<span class="tag tag-brand" style="font-size:.7rem;padding:.1rem .45rem">Match</span>':''}</div>
+                <div style="font-size:.875rem;font-weight:600">${f.fullName}
+                  ${match?'<span class="tag tag-brand" style="font-size:.7rem;padding:.1rem .45rem">Match</span>':''}
+                </div>
                 <div style="font-size:.78rem;color:var(--text-muted)">${(f.categoryIds||[]).slice(0,2).join(", ")||"—"} · ${avail}</div>
               </div>
             </div>
-            ${invited
-              ? `<span class="tag tag-gray" style="font-size:.78rem">Invited</span>`
-              : `<button class="btn btn-primary btn-sm" onclick="sendInvite('${p.id}','${f.id}','${f.fullName}')">Invite</button>`
-            }
+            ${action}
           </div>`;
         }).join("")}
       </div>`;
@@ -595,35 +618,90 @@
     } catch(e){ showAlert("Error: "+e.message,"error"); btn.disabled=false; btn.textContent="Invite"; }
   };
 
+  // ── Re-invite from project drawer ────────────
+  window.reInviteFromProject = async (projectId, freelancerId, name) => {
+    const btn = event.target;
+    btn.disabled=true; btn.textContent="Sending…";
+    try {
+      const expiresAt = new Date(); expiresAt.setHours(expiresAt.getHours()+48);
+      const ref = await addDoc(collection(db,"invitations"),{
+        projectId, freelancerId, pmId:user.uid,
+        status:"pending",
+        declineReason:"", extensionRequested:false, extensionGranted:false,
+        invitedAt:    serverTimestamp(),
+        expiresAt:    Timestamp.fromDate(expiresAt),
+        respondedAt:  null,
+        notificationSentAt: serverTimestamp()
+      });
+      invitations.push({
+        id:ref.id, projectId, freelancerId, pmId:user.uid, status:"pending",
+        invitedAt:{seconds:Date.now()/1000}, expiresAt:Timestamp.fromDate(expiresAt)
+      });
+      await updateDoc(doc(db,"projects",projectId),{ shortlistedFreelancers:arrayUnion(freelancerId) });
+      btn.textContent="Sent ✓"; btn.className="btn btn-ghost btn-sm"; btn.disabled=true;
+      showAlert(`Re-invitation sent to ${name}.`,"success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); btn.disabled=false; btn.textContent="↩ Re-invite"; }
+  };
+
   function renderInvitationsTab(projectId) {
-    const list = invitations.filter(i=>i.projectId===projectId);
-    const el   = document.getElementById("dtab-invitations");
+    // Group by freelancer — show latest invitation per freelancer, all history underneath
+    const list = invitations
+      .filter(i=>i.projectId===projectId)
+      .sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0));
+
+    const el = document.getElementById("dtab-invitations");
     if(!list.length){ el.innerHTML=`<p style="color:var(--text-muted);font-size:.875rem;padding:.5rem 0">No invitations sent yet.</p>`; return; }
 
-    const statusColors = { pending:"tag-amber", accepted:"tag-green", declined:"tag-red", expired:"tag-gray", cancelled:"tag-gray" };
+    const statusColors = {
+      pending:   "tag-amber",
+      accepted:  "tag-green",
+      declined:  "tag-red",
+      expired:   "tag-gray",
+      cancelled: "tag-gray"
+    };
+    const statusLabels = {
+      pending:   "⏳ Pending",
+      accepted:  "✓ Accepted",
+      declined:  "✗ Declined",
+      expired:   "Expired",
+      cancelled: "Cancelled"
+    };
+
+    const fmt = ts => ts?.toDate
+      ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})
+      : "—";
+
     el.innerHTML = list.map(inv=>{
       const fl      = freelancers.find(f=>f.id===inv.freelancerId);
-      const name    = fl?.fullName||inv.freelancerId;
-      const expires = inv.expiresAt?.toDate ? inv.expiresAt.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      const name    = fl?.fullName || inv.freelancerId;
       const init    = name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-      return `<div class="fl-invite-row" style="margin-bottom:.5rem">
-        <div class="fl-invite-info">
+      const canReinvite = ["declined","expired","cancelled"].includes(inv.status);
+
+      return `<div class="fl-invite-row" style="margin-bottom:.5rem;align-items:flex-start">
+        <div class="fl-invite-info" style="align-items:flex-start">
           <div class="fl-mini-avatar">${init}</div>
           <div>
             <div style="font-size:.875rem;font-weight:600">${name}</div>
-            <div style="font-size:.78rem;color:var(--text-muted)">
-              Expires ${expires}
-              ${inv.declineReason?` · Reason: "${inv.declineReason}"`:""}
+            <div style="font-size:.78rem;color:var(--text-muted);margin-top:.15rem">
+              Invited ${fmt(inv.invitedAt)}
+              ${inv.expiresAt&&inv.status==="pending" ? ` · Expires ${fmt(inv.expiresAt)}` : ""}
+              ${inv.respondedAt ? ` · Responded ${fmt(inv.respondedAt)}` : ""}
             </div>
+            ${inv.declineReason ? `<div style="font-size:.78rem;color:var(--danger);margin-top:.15rem">Reason: "${inv.declineReason}"</div>` : ""}
+            ${inv.extensionRequested ? `<div style="font-size:.78rem;color:var(--warning);margin-top:.15rem">⏳ Extension requested</div>` : ""}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem">
-          <span class="tag ${statusColors[inv.status]||"tag-gray"}">${inv.status}</span>
-          ${inv.status==="pending"?`<button class="btn btn-danger btn-sm" onclick="cancelInvite('${inv.id}')">Cancel</button>`:""}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;min-width:110px">
+          <span class="tag ${statusColors[inv.status]||"tag-gray"}">${statusLabels[inv.status]||inv.status}</span>
+          ${inv.status==="pending"
+            ? `<button class="btn btn-danger btn-sm" onclick="cancelInvite('${inv.id}')">Cancel</button>`
+            : ""}
+          ${canReinvite
+            ? `<button class="btn btn-outline btn-sm" onclick="reInviteFromProject('${projectId}','${inv.freelancerId}','${(name).replace(/'/g,"\\'")}')">↩ Re-invite</button>`
+            : ""}
         </div>
       </div>`;
-    }).join("");
-  }
+    }).join("");}
 
   window.cancelInvite = async (invId) => {
     if(!confirm("Cancel this invitation?")) return;
