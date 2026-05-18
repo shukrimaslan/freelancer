@@ -166,7 +166,7 @@
   import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import {
     collection, getDocs, doc, getDoc, updateDoc,
-    query, where, serverTimestamp, Timestamp, orderBy
+    query, where, serverTimestamp, Timestamp
   } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const { user, userData } = await guardAuth(["freelancer"]);
@@ -185,13 +185,16 @@
 
   // ── Load data ─────────────────────────────────
   async function load() {
+    // FIX: removed orderBy("invitedAt","desc") — that combo with where() requires
+    // a Firestore composite index. Sort client-side instead.
     const snap = await getDocs(query(
       collection(db,"invitations"),
-      where("freelancerId","==",uid),
-      orderBy("invitedAt","desc")
+      where("freelancerId","==",uid)
     ));
     invitations = [];
     snap.forEach(d=>invitations.push({id:d.id,...d.data()}));
+    // Sort newest first client-side
+    invitations.sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0));
 
     // Load project details for each invitation
     const projectIds = [...new Set(invitations.map(i=>i.projectId))];

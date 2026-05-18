@@ -170,11 +170,21 @@
               <option>Negeri Sembilan</option><option>Melaka</option><option>Sabah</option>
               <option>Sarawak</option>
             </select>
+            <select id="filter-acct" style="width:140px">
+              <option value="">All statuses</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+              <option value="blacklisted">Blacklisted</option>
+              <option value="inactive">Inactive</option>
+            </select>
             <select id="filter-avail" style="width:160px">
               <option value="">All availability</option>
               <option value="available">Available</option>
               <option value="busy">Busy</option>
               <option value="open_to_offers">Open to offers</option>
+              <option value="on_leave">On Leave</option>
+              <option value="not_available">Not Available</option>
             </select>
           </div>
         </div>
@@ -199,14 +209,138 @@
     </div>
   </div>
 
-  <!-- Freelancer detail modal -->
+  <!-- Freelancer management modal -->
   <div class="modal-overlay" id="fl-modal" style="display:none">
-    <div class="modal">
+    <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
       <div class="modal-header">
-        <h2 id="modal-name">Freelancer</h2>
+        <div>
+          <h2 id="modal-name">Freelancer</h2>
+          <div id="modal-badges" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem"></div>
+        </div>
         <button class="close-btn" id="modal-close">✕</button>
       </div>
-      <div id="modal-body"></div>
+
+      <!-- Modal tabs -->
+      <div class="tabs" style="margin-bottom:1.25rem">
+        <button class="tab-btn active" data-mtab="profile">Profile</button>
+        <button class="tab-btn" data-mtab="status">Status & Access</button>
+        <button class="tab-btn" data-mtab="invitations">Invitations</button>
+      </div>
+
+      <!-- Profile tab -->
+      <div id="mtab-profile" class="tab-panel active">
+        <div id="modal-body"></div>
+      </div>
+
+      <!-- Status & Access tab -->
+      <div id="mtab-status" class="tab-panel">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+
+          <!-- Account Status -->
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.4rem">Account Status</label>
+            <select id="st-account" style="width:100%">
+              <option value="pending">⏳ Pending</option>
+              <option value="approved">✅ Approved</option>
+              <option value="suspended">🔴 Suspended</option>
+              <option value="blacklisted">⛔ Blacklisted</option>
+              <option value="inactive">💤 Inactive</option>
+              <option value="archived">📦 Archived</option>
+            </select>
+          </div>
+
+          <!-- Verification Status -->
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.4rem">Verification</label>
+            <select id="st-verify" style="width:100%">
+              <option value="unverified">○ Unverified</option>
+              <option value="pending_verification">🕐 Pending Verification</option>
+              <option value="verified">✓ Verified</option>
+              <option value="verification_required">⚠️ Verification Required</option>
+              <option value="verification_failed">✗ Verification Failed</option>
+            </select>
+          </div>
+
+          <!-- Visibility Status -->
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.4rem">Visibility</label>
+            <select id="st-visibility" style="width:100%">
+              <option value="public">🌐 Public</option>
+              <option value="hidden">👁️ Hidden</option>
+              <option value="featured">⭐ Featured</option>
+            </select>
+          </div>
+
+          <!-- Availability Status -->
+          <div>
+            <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.4rem">Availability</label>
+            <select id="st-avail" style="width:100%">
+              <option value="available">🟢 Available</option>
+              <option value="busy">🔴 Busy</option>
+              <option value="open_to_offers">🟡 Open to offers</option>
+              <option value="on_leave">🌙 On Leave</option>
+              <option value="not_available">⭕ Not Available</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Reason -->
+        <div style="margin-bottom:.85rem">
+          <label style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.4rem">Reason / Note</label>
+          <select id="st-reason-preset" onchange="applyPresetReason(this.value)" style="width:100%;margin-bottom:.5rem">
+            <option value="">— Select a preset reason —</option>
+            <optgroup label="Review Reasons">
+              <option value="Incomplete portfolio">Incomplete portfolio</option>
+              <option value="Invalid identity information">Invalid identity information</option>
+              <option value="Duplicate account">Duplicate account</option>
+              <option value="Fake profile detected">Fake profile detected</option>
+              <option value="Low-quality portfolio">Low-quality portfolio</option>
+              <option value="Missing payment details">Missing payment details</option>
+              <option value="Unsupported service category">Unsupported service category</option>
+              <option value="AI-generated spam submissions">AI-generated spam submissions</option>
+              <option value="Underage applicant">Underage applicant</option>
+              <option value="Terms violation">Terms violation</option>
+            </optgroup>
+            <optgroup label="Suspension Reasons">
+              <option value="Suspended — Payment Dispute">Suspended — Payment Dispute</option>
+              <option value="Suspended — Client Complaints">Suspended — Client Complaints</option>
+              <option value="Suspended — Policy Violation">Suspended — Policy Violation</option>
+              <option value="Suspended — Spam Activity">Suspended — Spam Activity</option>
+              <option value="Suspended — Identity Verification Failed">Suspended — Identity Verification Failed</option>
+            </optgroup>
+            <optgroup label="Blacklist Reasons">
+              <option value="Blacklisted — Scam/Fraud">Blacklisted — Scam/Fraud</option>
+              <option value="Blacklisted — Harassment">Blacklisted — Harassment</option>
+              <option value="Blacklisted — Chargeback Abuse">Blacklisted — Chargeback Abuse</option>
+              <option value="Blacklisted — Fake Credentials">Blacklisted — Fake Credentials</option>
+              <option value="Blacklisted — Multi-Account Abuse">Blacklisted — Multi-Account Abuse</option>
+              <option value="Blacklisted — Permanent Ban">Blacklisted — Permanent Ban</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="Suspicious activity">Suspicious activity</option>
+              <option value="Copyright infringement">Copyright infringement</option>
+              <option value="custom">Other (type below)…</option>
+            </optgroup>
+          </select>
+          <textarea id="st-reason-text" rows="2" placeholder="Custom note or additional detail (optional)…" style="width:100%;resize:vertical"></textarea>
+        </div>
+
+        <div id="status-alert" style="display:none;margin-bottom:.85rem"></div>
+        <button class="btn btn-primary" id="btn-save-status">Save status changes</button>
+
+        <!-- Status history -->
+        <div style="margin-top:1.5rem">
+          <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem">Status history</div>
+          <div id="status-history" style="font-size:.825rem;color:var(--text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Invitations tab (per freelancer) -->
+      <div id="mtab-invitations" class="tab-panel">
+        <div id="modal-inv-list">Loading…</div>
+      </div>
+
       <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap" id="modal-actions"></div>
     </div>
   </div>
@@ -216,7 +350,7 @@
     import { guardAuth } from "./auth.js";
     import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
     import {
-      collection, getDocs, doc, updateDoc, query, where, orderBy, serverTimestamp, Timestamp
+      collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy, serverTimestamp, Timestamp
     } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
     // ── Auth guard ────────────────────────────────
@@ -300,7 +434,9 @@
 
     // ── Pending table ─────────────────────────────
     function renderPending() {
-      const pending = allFreelancers.filter(f => !f.isApproved);
+      const pending = allFreelancers.filter(f =>
+        !f.isApproved || f.accountStatus==="pending" || (!f.accountStatus && !f.isApproved)
+      );
       const tbody   = document.getElementById("pending-tbody");
       if (!pending.length) {
         tbody.innerHTML = `<tr><td colspan="6"><div class="empty">🎉 No pending applications.</div></td></tr>`;
@@ -324,11 +460,13 @@
     function renderDirectory(filter = "") {
       const stateFilter = document.getElementById("filter-state")?.value || "";
       const availFilter = document.getElementById("filter-avail")?.value || "";
+      const acctFilter  = document.getElementById("filter-acct")?.value  || "";
       const search      = (filter || document.getElementById("search-input")?.value || "").toLowerCase();
 
-      let list = allFreelancers.filter(f => f.isApproved);
+      let list = allFreelancers;
       if (stateFilter) list = list.filter(f => f.state === stateFilter);
       if (availFilter) list = list.filter(f => f.availability === availFilter);
+      if (acctFilter)  list = list.filter(f => (f.accountStatus||(f.isApproved?"approved":"pending")) === acctFilter);
       if (search)      list = list.filter(f =>
         f.fullName?.toLowerCase().includes(search) ||
         (f.tags||[]).some(t => t.includes(search)) ||
@@ -342,23 +480,37 @@
       }
 
       const availMap = {
-        available:    ["tag-green",  "Available"],
-        busy:         ["tag-red",    "Busy"],
-        open_to_offers:["tag-amber", "Open to offers"]
+        available:      ["tag-green",  "Available"],
+        busy:           ["tag-red",    "Busy"],
+        open_to_offers: ["tag-amber",  "Open to offers"],
+        on_leave:       ["tag-gray",   "On Leave"],
+        not_available:  ["tag-gray",   "Not Available"],
+      };
+      const acctMap = {
+        approved:    ["tag-green",  "Approved"],
+        pending:     ["tag-amber",  "Pending"],
+        suspended:   ["tag-red",    "Suspended"],
+        blacklisted: ["tag-red",    "Blacklisted"],
+        inactive:    ["tag-gray",   "Inactive"],
+        archived:    ["tag-gray",   "Archived"],
       };
 
       grid.innerHTML = list.map(f => {
         const av   = availMap[f.availability] || ["tag-gray","Unknown"];
+        const acct = acctMap[f.accountStatus||(f.isApproved?"approved":"pending")] || acctMap.pending;
         const init = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "?";
         const tags = (f.tags||[]).slice(0,3).map(t=>`<span class="tag tag-gray">${t}</span>`).join("");
+        const verBadge = f.verificationStatus==="verified" ? `<span style="font-size:.75rem;color:var(--brand)">✓</span>` : "";
+        const featBadge = f.visibilityStatus==="featured" ? `<span style="font-size:.75rem">⭐</span>` : "";
         return `
           <div class="fl-card" onclick="openModal('${f.id}')" style="cursor:pointer">
             <div class="fl-card-top">
               <div class="fl-avatar">${init}</div>
-              <div>
-                <div class="fl-name">${f.fullName}</div>
-                <div class="fl-title">${(f.categoryIds||[]).join(" · ") || "Freelancer"}</div>
+              <div style="flex:1;min-width:0">
+                <div class="fl-name">${f.fullName} ${verBadge}${featBadge}</div>
+                <div class="fl-title">${(f.categoryIds||[]).slice(0,2).join(" · ") || "Freelancer"}</div>
               </div>
+              <span class="tag ${acct[0]}" style="font-size:.7rem;white-space:nowrap">${acct[1]}</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;font-size:.8rem">
               <span class="tag ${av[0]}">${av[1]}</span>
@@ -377,78 +529,262 @@
       document.getElementById("search-input")?.addEventListener("input", e => renderDirectory(e.target.value));
       document.getElementById("filter-state")?.addEventListener("change", () => renderDirectory());
       document.getElementById("filter-avail")?.addEventListener("change", () => renderDirectory());
+      document.getElementById("filter-acct")?.addEventListener("change",  () => renderDirectory());
     }, 100);
 
-    // ── Approve freelancer ────────────────────────
+    // ── Status helpers ────────────────────────────
+    const ACCOUNT_STATUS = {
+      pending:     { label:"Pending",     cls:"tag-amber" },
+      approved:    { label:"Approved",    cls:"tag-green" },
+      suspended:   { label:"Suspended",   cls:"tag-red"   },
+      blacklisted: { label:"Blacklisted", cls:"tag-red"   },
+      inactive:    { label:"Inactive",    cls:"tag-gray"  },
+      archived:    { label:"Archived",    cls:"tag-gray"  },
+    };
+    const VERIFY_STATUS = {
+      unverified:            { label:"Unverified",            cls:"tag-gray"  },
+      pending_verification:  { label:"Pending Verification",  cls:"tag-amber" },
+      verified:              { label:"Verified ✓",            cls:"tag-brand" },
+      verification_required: { label:"Verification Required", cls:"tag-amber" },
+      verification_failed:   { label:"Verification Failed",   cls:"tag-red"   },
+    };
+    const VISIBILITY_STATUS = {
+      public:   { label:"Public",   cls:"tag-green" },
+      hidden:   { label:"Hidden",   cls:"tag-gray"  },
+      featured: { label:"Featured ⭐", cls:"tag-brand" },
+    };
+
+    // Approve freelancer (quick action from pending list)
     window.approveFreelancer = async (uid) => {
       try {
-        await updateDoc(doc(db, "freelancers", uid), { isApproved: true, updatedAt: serverTimestamp() });
-        await updateDoc(doc(db, "users", uid),        { isApproved: true });
-        allFreelancers = allFreelancers.map(f => f.id === uid ? { ...f, isApproved: true } : f);
+        const now = new Date().toISOString();
+        const histEntry = { status:"approved", reason:"Approved by admin", at: now, by: user.uid };
+        const f = allFreelancers.find(fl=>fl.id===uid) || {};
+        const hist = [...(f.statusHistory||[]), histEntry];
+        await updateDoc(doc(db,"freelancers",uid), {
+          accountStatus:"approved", isApproved:true,
+          statusHistory: hist, updatedAt:serverTimestamp()
+        });
+        await updateDoc(doc(db,"users",uid), { isApproved:true });
+        allFreelancers = allFreelancers.map(f=>f.id===uid ? {...f, accountStatus:"approved", isApproved:true, statusHistory:hist} : f);
         renderRecent(); renderPending(); renderDirectory();
-        const pending = allFreelancers.filter(f => !f.isApproved).length;
-        document.getElementById("pending-indicator").style.display = pending > 0 ? "inline-block" : "none";
+        const pending = allFreelancers.filter(f=>!f.isApproved).length;
+        document.getElementById("pending-indicator").style.display = pending>0?"inline-block":"none";
         document.getElementById("stat-pending").textContent  = pending;
         document.getElementById("stat-approved").textContent = allFreelancers.filter(f=>f.isApproved).length;
-        if (document.getElementById("fl-modal").style.display !== "none") closeModal();
-      } catch(e) { alert("Error approving: " + e.message); }
+        if(document.getElementById("fl-modal").style.display!=="none") closeModal();
+      } catch(e){ alert("Error: "+e.message); }
     };
 
     // ── Modal ─────────────────────────────────────
+    let modalUid = null;
+
     window.openModal = (uid) => {
-      const f = allFreelancers.find(fl => fl.id === uid);
-      if (!f) return;
+      modalUid = uid;
+      const f = allFreelancers.find(fl=>fl.id===uid);
+      if(!f) return;
+
       document.getElementById("modal-name").textContent = f.fullName;
 
-      const rows = [
-        ["Email",         f.id],
-        ["Phone",         f.phone || "—"],
-        ["State",         f.state || "—"],
-        ["Experience",    f.experienceLevel || "—"],
-        ["Languages",     (f.languages||[]).join(", ") || "—"],
-        ["Categories",    (f.categoryIds||[]).join(", ") || "—"],
-        ["Skills",        (f.tags||[]).join(", ") || "—"],
-        ["Rate",          `RM ${f.rateMin||0}${f.rateMax?"–"+f.rateMax:"+"} (${f.rateType||""})`],
-        ["Min budget",    `RM ${f.minProjectBudget||0}`],
-        ["Bank",          `${f.bankName||"—"} · ${f.bankAccountName||"—"}`],
-        ["Availability",  f.availability || "—"],
-        ["Bio",           f.bio || "—"],
-        ["Behance",       f.portfolioLinks?.behance ? `<a href="${f.portfolioLinks.behance}" target="_blank" style="color:var(--brand)">Link</a>` : "—"],
-        ["GitHub",        f.portfolioLinks?.github  ? `<a href="${f.portfolioLinks.github}"  target="_blank" style="color:var(--brand)">Link</a>` : "—"],
-        ["Website",       f.portfolioLinks?.website ? `<a href="${f.portfolioLinks.website}" target="_blank" style="color:var(--brand)">Link</a>` : "—"],
-        ["SSM",           f.ssm || "—"],
-        ["Status",        f.isApproved ? "✅ Approved" : "⏳ Pending"],
-        ["Registered",    f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString("en-MY") : "—"],
-      ];
+      // Badges row
+      const acct = ACCOUNT_STATUS[f.accountStatus||( f.isApproved?"approved":"pending")] || ACCOUNT_STATUS.pending;
+      const vfy  = VERIFY_STATUS[f.verificationStatus||"unverified"];
+      const vis  = VISIBILITY_STATUS[f.visibilityStatus||"public"];
+      document.getElementById("modal-badges").innerHTML = `
+        <span class="tag ${acct.cls}">${acct.label}</span>
+        <span class="tag ${vfy.cls}">${vfy.label}</span>
+        <span class="tag ${vis.cls}">${vis.label}</span>`;
 
-      document.getElementById("modal-body").innerHTML = rows.map(([l,v]) =>
-        `<div class="fl-detail-row"><span class="fl-detail-label">${l}</span><span>${v}</span></div>`
+      // Tab wiring
+      document.querySelectorAll(".tab-btn[data-mtab]").forEach(btn=>{
+        btn.onclick = ()=>{
+          document.querySelectorAll(".tab-btn[data-mtab]").forEach(b=>b.classList.remove("active"));
+          document.querySelectorAll("[id^='mtab-']").forEach(p=>p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById("mtab-"+btn.dataset.mtab).classList.add("active");
+          if(btn.dataset.mtab==="invitations") renderModalInvitations(uid);
+        };
+      });
+      // Reset to profile tab
+      document.querySelectorAll(".tab-btn[data-mtab]").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll("[id^='mtab-']").forEach(p=>p.classList.remove("active"));
+      document.querySelector(".tab-btn[data-mtab='profile']").classList.add("active");
+      document.getElementById("mtab-profile").classList.add("active");
+
+      // Profile tab content
+      const cats = (f.categoryIds||[]).join(", ")||"—";
+      const rows = [
+        ["Email",       f.id],
+        ["Phone",       f.phone||"—"],
+        ["State",       f.state||"—"],
+        ["Experience",  f.experienceLevel||"—"],
+        ["Languages",   (f.languages||[]).join(", ")||"—"],
+        ["Categories",  cats],
+        ["Skills",      (f.tags||[]).join(", ")||"—"],
+        ["Rate",        `RM ${f.rateMin||0}${f.rateMax?"–"+f.rateMax:"+"} (${f.rateType||""})`],
+        ["Min budget",  `RM ${f.minProjectBudget||0}`],
+        ["Bank",        `${f.bankName||"—"} · ${f.bankAccountName||"—"}`],
+        ["Behance",     f.portfolioLinks?.behance?`<a href="${f.portfolioLinks.behance}" target="_blank" style="color:var(--brand)">Link ↗</a>`:"—"],
+        ["GitHub",      f.portfolioLinks?.github ?`<a href="${f.portfolioLinks.github}"  target="_blank" style="color:var(--brand)">Link ↗</a>`:"—"],
+        ["Website",     f.portfolioLinks?.website?`<a href="${f.portfolioLinks.website}" target="_blank" style="color:var(--brand)">Link ↗</a>`:"—"],
+        ["SSM",         f.ssm||"—"],
+        ["Trust score", f.trustScore||0],
+        ["Projects done",f.totalProjectsCompleted||0],
+        ["Registered",  f.createdAt?.toDate?f.createdAt.toDate().toLocaleDateString("en-MY"):"—"],
+      ];
+      if(f.bio) rows.splice(3,0,["Bio", `<span style="color:var(--text-primary)">${f.bio}</span>`]);
+      document.getElementById("modal-body").innerHTML = rows.map(([l,v])=>
+        `<div class="fl-detail-row"><span class="fl-detail-label">${l}</span><span style="font-size:.875rem">${v}</span></div>`
       ).join("");
 
+      // Status tab — pre-fill current values
+      document.getElementById("st-account").value    = f.accountStatus||(f.isApproved?"approved":"pending");
+      document.getElementById("st-verify").value     = f.verificationStatus||"unverified";
+      document.getElementById("st-visibility").value = f.visibilityStatus||"public";
+      document.getElementById("st-avail").value      = f.availability||"available";
+      document.getElementById("st-reason-text").value = "";
+      document.getElementById("st-reason-preset").value = "";
+      document.getElementById("status-alert").style.display = "none";
+
+      // Status history
+      const hist = (f.statusHistory||[]).slice().reverse();
+      document.getElementById("status-history").innerHTML = hist.length
+        ? hist.slice(0,8).map(h=>`
+            <div style="display:flex;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--border)">
+              <span style="min-width:90px;color:var(--text-muted);font-size:.75rem">${h.at?new Date(h.at).toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}):"—"}</span>
+              <span><strong>${h.status}</strong>${h.reason?" — "+h.reason:""}</span>
+            </div>`).join("")
+        : `<span style="color:var(--text-muted)">No history yet.</span>`;
+
+      // Actions row (quick buttons)
       const actions = document.getElementById("modal-actions");
       actions.innerHTML = "";
-      if (!f.isApproved) {
-        const btn = document.createElement("button");
-        btn.className = "btn btn-primary";
-        btn.textContent = "✓ Approve freelancer";
-        btn.onclick = () => approveFreelancer(uid);
-        actions.appendChild(btn);
+      if(!f.isApproved || f.accountStatus==="pending") {
+        const ab = document.createElement("button");
+        ab.className="btn btn-primary"; ab.textContent="✓ Approve";
+        ab.onclick=()=>approveFreelancer(uid);
+        actions.appendChild(ab);
       }
-      const closeBtn = document.createElement("button");
-      closeBtn.className = "btn btn-ghost";
-      closeBtn.textContent = "Close";
-      closeBtn.onclick = closeModal;
-      actions.appendChild(closeBtn);
+      const cb = document.createElement("button");
+      cb.className="btn btn-ghost"; cb.textContent="Close";
+      cb.onclick=closeModal; actions.appendChild(cb);
 
-      document.getElementById("fl-modal").style.display = "flex";
+      document.getElementById("fl-modal").style.display="flex";
+    };
+
+    // Save status changes
+    document.getElementById("btn-save-status").addEventListener("click", async()=>{
+      if(!modalUid) return;
+      const acct = document.getElementById("st-account").value;
+      const vfy  = document.getElementById("st-verify").value;
+      const vis  = document.getElementById("st-visibility").value;
+      const avail= document.getElementById("st-avail").value;
+      const reason = document.getElementById("st-reason-text").value.trim();
+      const btn  = document.getElementById("btn-save-status");
+      const alertEl = document.getElementById("status-alert");
+
+      btn.disabled=true; btn.textContent="Saving…";
+      try {
+        const isApproved = acct==="approved";
+        const f = allFreelancers.find(fl=>fl.id===modalUid)||{};
+        const histEntry = {
+          status: acct, verificationStatus:vfy, visibilityStatus:vis,
+          reason: reason||document.getElementById("st-reason-preset").value||"",
+          at: new Date().toISOString(), by: user.uid
+        };
+        const hist = [...(f.statusHistory||[]), histEntry];
+
+        await updateDoc(doc(db,"freelancers",modalUid),{
+          accountStatus:      acct,
+          verificationStatus: vfy,
+          visibilityStatus:   vis,
+          availability:       avail,
+          isApproved,
+          isVerified:         vfy==="verified",
+          statusHistory:      hist,
+          updatedAt:          serverTimestamp()
+        });
+        await updateDoc(doc(db,"users",modalUid),{ isApproved });
+
+        // Update local state
+        allFreelancers = allFreelancers.map(fl=>fl.id===modalUid
+          ? {...fl, accountStatus:acct, verificationStatus:vfy, visibilityStatus:vis,
+             availability:avail, isApproved, isVerified:vfy==="verified", statusHistory:hist}
+          : fl);
+
+        renderRecent(); renderPending(); renderDirectory();
+        // Refresh modal
+        openModal(modalUid);
+        alertEl.innerHTML=`<div class="alert alert-success">✓ Status updated successfully.</div>`;
+        alertEl.style.display="block";
+        setTimeout(()=>alertEl.style.display="none",3000);
+      } catch(e){
+        alertEl.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;
+        alertEl.style.display="block";
+      }
+      btn.disabled=false; btn.textContent="Save status changes";
+    });
+
+    window.applyPresetReason = (val) => {
+      if(val && val!=="custom") document.getElementById("st-reason-text").value = val;
+      else if(val==="custom")   document.getElementById("st-reason-text").value = "";
+    };
+
+    // ── Per-freelancer invitations in modal ───────
+    async function renderModalInvitations(uid) {
+      const el = document.getElementById("modal-inv-list");
+      el.innerHTML=`<div style="color:var(--text-muted);font-size:.875rem">Loading…</div>`;
+      const list = allInvitations.filter(i=>i.freelancerId===uid);
+      if(!list.length){ el.innerHTML=`<p style="color:var(--text-muted);font-size:.875rem">No invitations yet.</p>`; return; }
+
+      const statusColors = { pending:"tag-amber",accepted:"tag-green",declined:"tag-red",expired:"tag-gray",cancelled:"tag-gray" };
+      const fmt = ts=>ts?.toDate?ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}):"—";
+
+      el.innerHTML = list.map(inv=>{
+        const pr = allProjects.find(p=>p.id===inv.projectId);
+        const canReinvite = ["declined","expired","cancelled"].includes(inv.status);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;
+            padding:.65rem 0;border-bottom:1px solid var(--border);gap:.5rem;flex-wrap:wrap">
+          <div>
+            <div style="font-size:.875rem;font-weight:600">${pr?.title||"Unknown project"}</div>
+            <div style="font-size:.78rem;color:var(--text-muted)">${fmt(inv.invitedAt)}${inv.declineReason?" · "+inv.declineReason:""}</div>
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center">
+            <span class="tag ${statusColors[inv.status]||"tag-gray"}">${inv.status}</span>
+            ${canReinvite&&pr?`<button class="btn btn-outline btn-sm" onclick="reInvite('${pr.id}','${uid}','${pr.title?.replace(/'/g,"\\'")||""}')">↩ Re-invite</button>`:""}
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    // ── Re-invite freelancer ──────────────────────
+    window.reInvite = async (projectId, freelancerId, projectTitle) => {
+      if(!confirm(`Re-invite this freelancer to "${projectTitle}"?`)) return;
+      try {
+        const expiresAt = new Date(); expiresAt.setHours(expiresAt.getHours()+48);
+        const ref = await addDoc(collection(db,"invitations"),{
+          projectId, freelancerId, pmId:user.uid,
+          status:"pending",
+          declineReason:"", extensionRequested:false, extensionGranted:false,
+          invitedAt:    serverTimestamp(),
+          expiresAt:    Timestamp.fromDate(expiresAt),
+          respondedAt:  null,
+          notificationSentAt: serverTimestamp()
+        });
+        allInvitations.push({id:ref.id,projectId,freelancerId,pmId:user.uid,status:"pending",
+          invitedAt:{seconds:Date.now()/1000}, expiresAt:Timestamp.fromDate(expiresAt)});
+        renderModalInvitations(freelancerId);
+        alert("Re-invitation sent successfully.");
+      } catch(e){ alert("Error: "+e.message); }
     };
 
     function closeModal() {
-      document.getElementById("fl-modal").style.display = "none";
+      document.getElementById("fl-modal").style.display="none";
+      modalUid = null;
     }
     document.getElementById("modal-close").addEventListener("click", closeModal);
-    document.getElementById("fl-modal").addEventListener("click", e => {
-      if (e.target === document.getElementById("fl-modal")) closeModal();
+    document.getElementById("fl-modal").addEventListener("click", e=>{
+      if(e.target===document.getElementById("fl-modal")) closeModal();
     });
 
     // ── Extension requests panel ──────────────────
