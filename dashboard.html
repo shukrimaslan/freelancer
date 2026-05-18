@@ -353,7 +353,7 @@
       collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy, serverTimestamp, Timestamp
     } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-    // ── Auth guard ────────────────────────────────
+    // ── Auth ──────────────────────────────────────
     const { user, userData } = await guardAuth(["admin", "pm"]);
     const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "A";
     document.getElementById("nav-avatar").textContent   = initials;
@@ -380,16 +380,27 @@
     let allFreelancers  = [];
     let allProjects     = [];
     let allInvitations  = [];
+    let catMap          = {}; // id → { name, icon }
+
+    // Helper: resolve category IDs → "icon Name · icon Name"
+    function resolveCats(ids, max = 99) {
+      return (ids||[]).slice(0, max)
+        .map(id => catMap[id] ? `${catMap[id].icon} ${catMap[id].name}` : null)
+        .filter(Boolean)
+        .join(" · ") || "—";
+    }
 
     async function loadFreelancers() {
-      const [fSnap, pSnap, iSnap] = await Promise.all([
+      const [fSnap, pSnap, iSnap, cSnap] = await Promise.all([
         getDocs(collection(db, "freelancers")),
         getDocs(collection(db, "projects")),
-        getDocs(collection(db, "invitations"))
+        getDocs(collection(db, "invitations")),
+        getDocs(collection(db, "categories"))
       ]);
       allFreelancers = []; fSnap.forEach(d => allFreelancers.push({ id: d.id, ...d.data() }));
       allProjects    = []; pSnap.forEach(d => allProjects.push({ id: d.id, ...d.data() }));
       allInvitations = []; iSnap.forEach(d => allInvitations.push({ id: d.id, ...d.data() }));
+      catMap = {};          cSnap.forEach(d => { catMap[d.id] = { name: d.data().name, icon: d.data().icon||"📁" }; });
 
       // Stats
       const total     = allFreelancers.length;
@@ -424,7 +435,7 @@
         <tr>
           <td><strong>${f.fullName}</strong></td>
           <td>${f.state || "—"}</td>
-          <td>${(f.categoryIds||[]).slice(0,2).join(", ") || "—"}</td>
+          <td>${resolveCats(f.categoryIds, 2)}</td>
           <td>${f.isApproved
             ? `<span class="tag tag-green">Approved</span>`
             : `<span class="tag tag-amber">Pending</span>`}</td>
@@ -447,7 +458,7 @@
           <td><strong>${f.fullName}</strong></td>
           <td style="color:var(--text-muted);font-size:.8rem">${f.id}</td>
           <td>${f.state || "—"}</td>
-          <td>${(f.categoryIds||[]).join(", ") || "—"}</td>
+          <td>${resolveCats(f.categoryIds)}</td>
           <td>${f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString("en-MY") : "—"}</td>
           <td style="display:flex;gap:.4rem">
             <button class="btn btn-primary btn-sm" onclick="approveFreelancer('${f.id}')">Approve</button>
@@ -469,8 +480,8 @@
       if (acctFilter)  list = list.filter(f => (f.accountStatus||(f.isApproved?"approved":"pending")) === acctFilter);
       if (search)      list = list.filter(f =>
         f.fullName?.toLowerCase().includes(search) ||
-        (f.tags||[]).some(t => t.includes(search)) ||
-        (f.categoryIds||[]).some(c => c.includes(search))
+        (f.tags||[]).some(t => t.toLowerCase().includes(search)) ||
+        (f.categoryIds||[]).some(id => catMap[id]?.name?.toLowerCase().includes(search))
       );
 
       const grid = document.getElementById("fl-grid");
@@ -508,7 +519,7 @@
               <div class="fl-avatar">${init}</div>
               <div style="flex:1;min-width:0">
                 <div class="fl-name">${f.fullName} ${verBadge}${featBadge}</div>
-                <div class="fl-title">${(f.categoryIds||[]).slice(0,2).join(" · ") || "Freelancer"}</div>
+                <div class="fl-title">${resolveCats(f.categoryIds, 2) || "Freelancer"}</div>
               </div>
               <span class="tag ${acct[0]}" style="font-size:.7rem;white-space:nowrap">${acct[1]}</span>
             </div>
@@ -612,7 +623,7 @@
       document.getElementById("mtab-profile").classList.add("active");
 
       // Profile tab content
-      const cats = (f.categoryIds||[]).join(", ")||"—";
+      const cats = resolveCats(f.categoryIds) || "—";
       const rows = [
         ["Email",       f.id],
         ["Phone",       f.phone||"—"],

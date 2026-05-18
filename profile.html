@@ -51,7 +51,10 @@
       </a>
       <div class="navbar-nav">
         <a href="profile.html"     class="nav-link active">My Profile</a>
-        <a href="invitations.html" class="nav-link">Invitations</a>
+        <span class="nav-link-wrap">
+          <a href="invitations.html" class="nav-link" id="nav-invitations">Invitations</a>
+          <span class="notif-dot" id="inv-notif-dot"></span>
+        </span>
         <a href="settings.html"    class="nav-link">Settings</a>
       </div>
       <div class="nav-user">
@@ -199,7 +202,7 @@
     import { guardAuth } from "./auth.js";
     import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
     import {
-      doc, getDoc, updateDoc, serverTimestamp
+      doc, getDoc, updateDoc, serverTimestamp, collection, getDocs, query, where
     } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
     const { user, userData } = await guardAuth(["freelancer"]);
@@ -208,6 +211,17 @@
     document.getElementById("btn-logout").addEventListener("click", async () => {
       await signOut(auth); window.location.href = "index.html";
     });
+
+    // ── Load categories for name resolution ───────
+    let catMap = {};
+    const cSnap = await getDocs(collection(db, "categories"));
+    cSnap.forEach(d => { catMap[d.id] = { name: d.data().name, icon: d.data().icon||"📁" }; });
+
+    function resolveCats(ids, sep=" · ") {
+      return (ids||[])
+        .map(id => catMap[id] ? `${catMap[id].icon} ${catMap[id].name}` : null)
+        .filter(Boolean).join(sep) || "—";
+    }
 
     // ── Tabs ──────────────────────────────────────
     document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -232,7 +246,7 @@
     const initials = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() || "?";
     document.getElementById("profile-initials").textContent = initials;
     document.getElementById("profile-name").textContent     = f.fullName;
-    document.getElementById("profile-cats").textContent     = (f.categoryIds||[]).join(" · ");
+    document.getElementById("profile-cats").textContent     = resolveCats(f.categoryIds);
     document.getElementById("profile-state").textContent    = f.state || "";
     document.getElementById("nav-avatar").textContent       = initials;
     document.getElementById("nav-name").textContent         = f.fullName?.split(" ")[0] || "Me";
@@ -332,6 +346,16 @@
       }
       btn.disabled = false; btn.textContent = "Save changes";
     });
+
+    // ── Notification dot — pending invitations ─────
+    try {
+      const invSnap = await getDocs(query(
+        collection(db,"invitations"),
+        where("freelancerId","==",uid),
+        where("status","==","pending")
+      ));
+      if(!invSnap.empty) document.getElementById("inv-notif-dot").classList.add("visible");
+    } catch(e){ console.error("notif badge:", e); }
   </script>
 </body>
 </html>

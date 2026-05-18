@@ -294,20 +294,28 @@
     }
 
     grid.innerHTML = list.map(p => {
-      const invCount   = invitations.filter(i=>i.projectId===p.id).length;
-      const pendCount  = invitations.filter(i=>i.projectId===p.id&&i.status==="pending").length;
+      const projInvs   = invitations.filter(i=>i.projectId===p.id);
+      const invCount   = projInvs.length;
+      const pendCount  = projInvs.filter(i=>i.status==="pending").length;
+      // New responses = accepted/declined with respondedAt set but not yet seenAt by admin
+      const newResponses = projInvs.filter(i=>
+        i.respondedAt && !i.seenAt && ["accepted","declined"].includes(i.status)
+      );
       const statusCls  = `status-${p.status}`;
       const statusLabel= { draft:"Draft", open:"Open", in_progress:"In progress", completed:"Completed", cancelled:"Cancelled" }[p.status]||p.status;
       const start = p.startDate?.toDate ? p.startDate.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}) : "—";
       const end   = p.endDate?.toDate   ? p.endDate.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"})   : "—";
+      const responseBadge = newResponses.length
+        ? `<span class="proj-card-response-badge">● ${newResponses.length} new response${newResponses.length>1?"s":""}</span>`
+        : "";
       return `
         <div class="proj-card" onclick="openDetail('${p.id}')">
           <div class="proj-card-top">
-            <div>
+            <div style="min-width:0;flex:1">
               <div class="proj-title">${p.title}</div>
               <div class="proj-client">${p.clientName||"—"}</div>
             </div>
-            <span class="tag ${statusCls}" style="white-space:nowrap">${statusLabel}</span>
+            <span class="tag ${statusCls}" style="white-space:nowrap;flex-shrink:0">${statusLabel}</span>
           </div>
           <div style="font-size:.825rem;color:var(--text-secondary);line-height:1.5;
             display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
@@ -319,10 +327,13 @@
           </div>
           <div class="proj-footer">
             <div style="font-size:.8rem;color:var(--text-muted)">
-              ${(p.categoryIds||[]).slice(0,2).join(", ")||"No categories"}
+              ${(p.categoryIds||[]).slice(0,2).map(id=>categories.find(c=>c.id===id)).filter(Boolean).map(c=>`${c.icon} ${c.name}`).join(", ")||"No categories"}
             </div>
-            <div style="font-size:.8rem;color:var(--text-muted)">
-              ${invCount} invite${invCount!==1?"s":""}${pendCount?" · "+pendCount+" pending":""}
+            <div style="display:flex;align-items:center;gap:.4rem">
+              ${responseBadge}
+              <span style="font-size:.8rem;color:var(--text-muted)">
+                ${invCount} invite${invCount!==1?"s":""}${pendCount?" · "+pendCount+" pending":""}
+              </span>
             </div>
           </div>
         </div>`;
@@ -448,6 +459,18 @@
     currentDetailId = projectId;
     const p = projects.find(pr=>pr.id===projectId);
     if(!p) return;
+
+    // Mark any unread responses as seen
+    const unseen = invitations.filter(i=>
+      i.projectId===projectId && i.respondedAt && !i.seenAt && ["accepted","declined"].includes(i.status)
+    );
+    if(unseen.length) {
+      await Promise.all(unseen.map(i=>
+        updateDoc(doc(db,"invitations",i.id),{ seenAt: serverTimestamp() })
+      ));
+      unseen.forEach(i=>{ i.seenAt = true; });
+      renderProjects(); // refresh cards to remove badges
+    }
 
     document.getElementById("detail-title").textContent  = p.title;
     document.getElementById("detail-client").textContent = p.clientName;
@@ -578,7 +601,7 @@
                 <div style="font-size:.875rem;font-weight:600">${f.fullName}
                   ${match?'<span class="tag tag-brand" style="font-size:.7rem;padding:.1rem .45rem">Match</span>':''}
                 </div>
-                <div style="font-size:.78rem;color:var(--text-muted)">${(f.categoryIds||[]).slice(0,2).join(", ")||"—"} · ${avail}</div>
+                <div style="font-size:.78rem;color:var(--text-muted)">${(f.categoryIds||[]).slice(0,2).map(id=>categories.find(c=>c.id===id)?.name).filter(Boolean).join(", ")||"—"} · ${avail}</div>
               </div>
             </div>
             ${action}

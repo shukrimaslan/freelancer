@@ -88,7 +88,10 @@
     </a>
     <div class="navbar-nav">
       <a href="profile.html"     class="nav-link">My Profile</a>
-      <a href="invitations.html" class="nav-link">Invitations</a>
+      <span class="nav-link-wrap">
+        <a href="invitations.html" class="nav-link" id="nav-invitations">Invitations</a>
+        <span class="notif-dot" id="inv-notif-dot"></span>
+      </span>
       <a href="settings.html"    class="nav-link active">Settings</a>
     </div>
     <div class="nav-user">
@@ -413,7 +416,7 @@
   import { guardAuth } from "./auth.js";
   import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import {
-    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, serverTimestamp
+    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const { user, userData } = await guardAuth(["freelancer"]);
@@ -712,6 +715,16 @@
   document.getElementById("btn-signout-all").addEventListener("click", async()=>{
     await signOut(auth); window.location.href="index.html";
   });
+
+  // ── Notification dot — pending invitations ────
+  try {
+    const invSnap = await getDocs(query(
+      collection(db,"invitations"),
+      where("freelancerId","==",uid),
+      where("status","==","pending")
+    ));
+    if(!invSnap.empty) document.getElementById("inv-notif-dot").classList.add("visible");
+  } catch(e){ console.error("notif badge:", e); }
 </script>
 </body>
 </html>

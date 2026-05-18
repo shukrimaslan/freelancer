@@ -83,6 +83,30 @@ p  { color: var(--text-secondary); }
   transition: background .15s, color .15s;
 }
 .nav-link:hover, .nav-link.active { background: var(--brand-light); color: var(--brand); }
+
+/* ── Notification dot ─────────────────────────── */
+.nav-link-wrap {
+  position: relative; display: inline-flex; align-items: center;
+}
+.notif-dot {
+  position: absolute; top: 2px; right: 2px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); border: 1.5px solid var(--surface);
+  display: none;
+}
+.notif-dot.visible { display: block; }
+/* Project card response badge */
+.proj-card-response-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; font-weight: 600;
+  color: var(--danger); background: var(--danger-light);
+  padding: .2rem .55rem; border-radius: 99px;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .6; }
+}
 .nav-user {
   display: flex; align-items: center; gap: .6rem;
   font-size: .875rem; color: var(--text-secondary);
@@ -216,8 +240,8 @@ tbody tr:hover { background: var(--bg); }
   background: var(--brand); color: white; font-size: 1.1rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.fl-name  { font-weight: 600; font-size: .95rem; }
-.fl-title { font-size: .8rem; color: var(--text-muted); }
+.fl-name  { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl-title { font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fl-tags  { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .75rem; }
 
 /* ── Availability badge ──────────────────────────── */
