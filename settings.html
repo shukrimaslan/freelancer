@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RosterMY — Settings</title>
+  <title>gengstr — Settings</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -84,7 +84,7 @@
       <div class="logo-dot">
         <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
-      RosterMY
+      gengstr
     </a>
     <div class="navbar-nav">
       <a href="profile.html" class="nav-link">My Profile</a>
@@ -179,23 +179,8 @@
               <label class="lang-item" data-lang="Mandarin">
                 <input type="checkbox" value="Mandarin"> Mandarin 🇨🇳
               </label>
-              <label class="lang-item" data-lang="Cantonese">
-                <input type="checkbox" value="Cantonese"> Cantonese
-              </label>
               <label class="lang-item" data-lang="Tamil">
                 <input type="checkbox" value="Tamil"> Tamil 🇮🇳
-              </label>
-              <label class="lang-item" data-lang="Hokkien">
-                <input type="checkbox" value="Hokkien"> Hokkien
-              </label>
-              <label class="lang-item" data-lang="Hakka">
-                <input type="checkbox" value="Hakka"> Hakka
-              </label>
-              <label class="lang-item" data-lang="Iban">
-                <input type="checkbox" value="Iban"> Iban
-              </label>
-              <label class="lang-item" data-lang="Kadazan">
-                <input type="checkbox" value="Kadazan"> Kadazan
               </label>
               <label class="lang-item" data-lang="Arabic">
                 <input type="checkbox" value="Arabic"> Arabic 🇸🇦
@@ -205,6 +190,9 @@
               </label>
               <label class="lang-item" data-lang="Korean">
                 <input type="checkbox" value="Korean"> Korean 🇰🇷
+              </label>
+              <label class="lang-item" data-lang="French">
+                <input type="checkbox" value="French"> French 🇫🇷
               </label>
             </div>
             <div class="lang-other">
@@ -526,7 +514,7 @@
 
   // Languages — check boxes
   const savedLangs = f.languages || [];
-  const knownLangs = ["Bahasa Malaysia","English","Mandarin","Cantonese","Tamil","Hokkien","Hakka","Iban","Kadazan","Arabic","Japanese","Korean"];
+  const knownLangs = ["Bahasa Malaysia","English","Mandarin","Tamil","Arabic","Japanese","Korean","French"];
   const otherLangs = savedLangs.filter(l=>!knownLangs.includes(l));
   document.querySelectorAll(".lang-item input").forEach(cb=>{
     if(savedLangs.includes(cb.value)){cb.checked=true;cb.closest(".lang-item").classList.add("selected");}

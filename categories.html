@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gengstr — Manage Categories</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .sidebar {
+      width:220px;min-width:220px;border-right:1px solid var(--border);
+      padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.25rem;
+      position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;
+    }
+    .sidebar-label{font-size:.7rem;font-weight:600;color:var(--text-muted);
+      text-transform:uppercase;letter-spacing:.06em;padding:.4rem .6rem .15rem;}
+    .sidebar-link{
+      display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;border-radius:8px;
+      font-size:.875rem;font-weight:500;color:var(--text-secondary);text-decoration:none;
+      cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;
+    }
+    .sidebar-link svg{width:16px;height:16px;flex-shrink:0;}
+    .sidebar-link:hover,.sidebar-link.active{background:var(--brand-light);color:var(--brand);}
+    .main-content{flex:1;padding:1.75rem;overflow-y:auto;min-width:0;}
+    .app-body{display:flex;height:calc(100vh - 57px);}
+
+    .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;}
+    .cat-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      overflow:hidden;
+    }
+    .cat-card-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.85rem 1rem;border-bottom:1px solid var(--border);
+      background:var(--bg);
+    }
+    .cat-card-header h3{font-size:.9rem;display:flex;align-items:center;gap:.5rem;}
+    .cat-skills{padding:.75rem 1rem;display:flex;flex-wrap:wrap;gap:.4rem;min-height:56px;}
+    .cat-footer{padding:.6rem 1rem;border-top:1px solid var(--border);display:flex;gap:.5rem;}
+    .skill-pill{
+      display:inline-flex;align-items:center;gap:.35rem;
+      padding:.25rem .65rem;border-radius:99px;font-size:.78rem;font-weight:500;
+      background:var(--brand-light);color:var(--brand);border:1px solid transparent;
+    }
+    .skill-pill button{
+      background:none;border:none;cursor:pointer;color:var(--brand);
+      font-size:.9rem;line-height:1;padding:0;opacity:.6;
+    }
+    .skill-pill button:hover{opacity:1;}
+
+    /* Modal */
+    .modal-overlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;
+    }
+    .modal{
+      background:var(--surface);border-radius:var(--radius-lg);
+      width:100%;max-width:480px;padding:1.75rem;box-shadow:0 8px 32px rgba(0,0,0,.12);
+    }
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;}
+    .close-btn{background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--text-muted);}
+    .empty-cat{
+      padding:.75rem 1rem;font-size:.825rem;color:var(--text-muted);font-style:italic;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <a class="navbar-brand" href="dashboard.html">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      gengstr
+    </a>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">A</div>
+      <span id="nav-name">Admin</span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-label">Manage</div>
+    <a class="sidebar-link" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a class="sidebar-link" href="projects.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      Projects
+    </a>
+    <a class="sidebar-link active" href="categories.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      Categories & Skills
+    </a>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Categories & Skills</h1>
+        <p>Manage the categories and skill tags freelancers can select on their profiles.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-add-cat">+ Add category</button>
+    </div>
+
+    <div id="alert-box" style="display:none;margin-bottom:1rem"></div>
+
+    <div class="cat-grid" id="cat-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted)">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit category modal -->
+<div class="modal-overlay" id="cat-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="cat-modal-title">Add category</h2>
+      <button class="close-btn" onclick="closeCatModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label for="cat-name">Category name <span class="req">*</span></label>
+      <input type="text" id="cat-name" placeholder="e.g. Audio Engineering">
+    </div>
+    <div class="form-group">
+      <label for="cat-icon">Icon (emoji) <span class="req">*</span></label>
+      <input type="text" id="cat-icon" placeholder="e.g. 🎵" maxlength="4" style="max-width:80px">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label for="cat-desc">Short description</label>
+      <input type="text" id="cat-desc" placeholder="e.g. Music production, sound design, mixing">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.5rem">
+      <button class="btn btn-ghost" onclick="closeCatModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-cat">Save category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add skill modal -->
+<div class="modal-overlay" id="skill-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="skill-modal-title">Add skills</h2>
+      <button class="close-btn" onclick="closeSkillModal()">✕</button>
+    </div>
+    <p style="font-size:.875rem;margin-bottom:1.25rem">Adding skills to <strong id="skill-cat-name"></strong>. Press Enter or comma to add each skill.</p>
+    <div class="form-group">
+      <label for="skill-input">Skill name</label>
+      <input type="text" id="skill-input" placeholder="e.g. Pro Tools, Ableton Live, Sound Design">
+    </div>
+    <div class="tag-picker" id="skill-preview" style="margin-bottom:1rem;min-height:32px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:.75rem">
+      <button class="btn btn-ghost" onclick="closeSkillModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-skills">Add skills</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import { guardAuth } from "./auth.js";
+  import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import {
+    collection, getDocs, doc, setDoc, addDoc, updateDoc, deleteDoc,
+    arrayUnion, arrayRemove, serverTimestamp, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  const { user, userData } = await guardAuth(["admin"]);
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"A";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0]||"Admin";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  let categories = []; // { id, name, icon, description, skills:[] }
+  let editingCatId = null;
+  let skillTargetId = null;
+  let pendingSkills  = [];
+
+  // ── Load categories ──────────────────────────
+  async function loadCategories() {
+    const snap = await getDocs(query(collection(db,"categories"), orderBy("name")));
+    categories = [];
+    snap.forEach(d => categories.push({ id:d.id, ...d.data() }));
+    render();
+  }
+
+  function render() {
+    const grid = document.getElementById("cat-grid");
+    if (!categories.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-muted)">No categories yet. Add one to get started.</div>`;
+      return;
+    }
+    grid.innerHTML = categories.map(cat => `
+      <div class="cat-card" id="cat-${cat.id}">
+        <div class="cat-card-header">
+          <h3>${cat.icon||"📁"} ${cat.name}</h3>
+          <div style="display:flex;gap:.4rem">
+            <button class="btn btn-ghost btn-sm" onclick="openEditCat('${cat.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCat('${cat.id}','${cat.name}')">Delete</button>
+          </div>
+        </div>
+        ${cat.description ? `<div style="padding:.5rem 1rem;font-size:.8rem;color:var(--text-muted);border-bottom:1px solid var(--border)">${cat.description}</div>` : ""}
+        <div class="cat-skills" id="skills-${cat.id}">
+          ${(cat.skills||[]).length
+            ? (cat.skills||[]).map(s=>`
+                <span class="skill-pill">
+                  ${s}
+                  <button onclick="removeSkill('${cat.id}','${s}')" title="Remove skill">×</button>
+                </span>`).join("")
+            : `<span class="empty-cat">No skills added yet.</span>`
+          }
+        </div>
+        <div class="cat-footer">
+          <button class="btn btn-outline btn-sm" onclick="openAddSkill('${cat.id}','${cat.name}')">+ Add skills</button>
+        </div>
+      </div>`).join("");
+  }
+
+  // ── Category CRUD ────────────────────────────
+  document.getElementById("btn-add-cat").addEventListener("click", () => {
+    editingCatId = null;
+    document.getElementById("cat-modal-title").textContent = "Add category";
+    document.getElementById("cat-name").value = "";
+    document.getElementById("cat-icon").value = "";
+    document.getElementById("cat-desc").value = "";
+    document.getElementById("cat-modal").style.display = "flex";
+  });
+
+  window.openEditCat = (id) => {
+    const cat = categories.find(c=>c.id===id);
+    if (!cat) return;
+    editingCatId = id;
+    document.getElementById("cat-modal-title").textContent = "Edit category";
+    document.getElementById("cat-name").value = cat.name || "";
+    document.getElementById("cat-icon").value = cat.icon || "";
+    document.getElementById("cat-desc").value = cat.description || "";
+    document.getElementById("cat-modal").style.display = "flex";
+  };
+
+  document.getElementById("btn-save-cat").addEventListener("click", async () => {
+    const name = document.getElementById("cat-name").value.trim();
+    const icon = document.getElementById("cat-icon").value.trim();
+    const desc = document.getElementById("cat-desc").value.trim();
+    if (!name || !icon) return showAlert("Please enter a category name and icon.","error");
+
+    const btn = document.getElementById("btn-save-cat");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      if (editingCatId) {
+        await updateDoc(doc(db,"categories",editingCatId), { name, icon, description:desc, updatedAt:serverTimestamp() });
+        const idx = categories.findIndex(c=>c.id===editingCatId);
+        if (idx>-1) { categories[idx].name=name; categories[idx].icon=icon; categories[idx].description=desc; }
+      } else {
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+        const ref  = await addDoc(collection(db,"categories"), {
+          name, icon, slug, description:desc, skills:[], isActive:true, createdAt:serverTimestamp()
+        });
+        categories.push({ id:ref.id, name, icon, slug, description:desc, skills:[], isActive:true });
+      }
+      render();
+      closeCatModal();
+    } catch(e) { showAlert("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save category";
+  });
+
+  window.deleteCat = async (id, name) => {
+    if (!confirm(`Delete category "${name}"? This cannot be undone.`)) return;
+    try {
+      await deleteDoc(doc(db,"categories",id));
+      categories = categories.filter(c=>c.id!==id);
+      render();
+    } catch(e) { showAlert("Error deleting: "+e.message,"error"); }
+  };
+
+  window.closeCatModal = () => {
+    document.getElementById("cat-modal").style.display = "none";
+  };
+
+  // ── Skill CRUD ───────────────────────────────
+  window.openAddSkill = (catId, catName) => {
+    skillTargetId = catId;
+    pendingSkills  = [];
+    document.getElementById("skill-cat-name").textContent = catName;
+    document.getElementById("skill-modal-title").textContent = `Add skills to ${catName}`;
+    document.getElementById("skill-input").value = "";
+    document.getElementById("skill-preview").innerHTML = "";
+    document.getElementById("skill-modal").style.display = "flex";
+    setTimeout(()=>document.getElementById("skill-input").focus(),100);
+  };
+
+  window.closeSkillModal = () => {
+    document.getElementById("skill-modal").style.display = "none";
+  };
+
+  const skillInput = document.getElementById("skill-input");
+  skillInput.addEventListener("keydown", e => {
+    if (e.key==="Enter" || e.key===",") {
+      e.preventDefault();
+      const val = skillInput.value.replace(",","").trim();
+      if (val) addPendingSkill(val);
+      skillInput.value = "";
+    }
+  });
+
+  function addPendingSkill(val) {
+    val = val.trim();
+    if (!val || pendingSkills.includes(val)) return;
+    pendingSkills.push(val);
+    const pill = document.createElement("span");
+    pill.className = "skill-pill";
+    pill.innerHTML = `${val} <button onclick="this.parentElement.remove();pendingSkills.splice(pendingSkills.indexOf('${val}'),1)">×</button>`;
+    document.getElementById("skill-preview").appendChild(pill);
+  }
+
+  document.getElementById("btn-save-skills").addEventListener("click", async () => {
+    // Also capture anything typed but not yet Enter'd
+    const typed = skillInput.value.trim();
+    if (typed) { addPendingSkill(typed); skillInput.value=""; }
+    if (!pendingSkills.length) return showAlert("Please add at least one skill.","error");
+
+    const btn = document.getElementById("btn-save-skills");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      await updateDoc(doc(db,"categories",skillTargetId), { skills: arrayUnion(...pendingSkills), updatedAt:serverTimestamp() });
+      const cat = categories.find(c=>c.id===skillTargetId);
+      if (cat) cat.skills = [...new Set([...(cat.skills||[]),...pendingSkills])];
+      render();
+      closeSkillModal();
+    } catch(e) { showAlert("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Add skills";
+  });
+
+  window.removeSkill = async (catId, skill) => {
+    try {
+      await updateDoc(doc(db,"categories",catId), { skills: arrayRemove(skill), updatedAt:serverTimestamp() });
+      const cat = categories.find(c=>c.id===catId);
+      if (cat) cat.skills = cat.skills.filter(s=>s!==skill);
+      render();
+    } catch(e) { showAlert("Error removing skill: "+e.message,"error"); }
+  };
+
+  // ── Helpers ──────────────────────────────────
+  function showAlert(msg, type="success") {
+    const box = document.getElementById("alert-box");
+    box.innerHTML = `<div class="alert alert-${type==="error"?"error":"success"}">${msg}</div>`;
+    box.style.display="block";
+    if(type!=="error") setTimeout(()=>box.style.display="none", 3000);
+  }
+
+  // Close modals on backdrop click
+  ["cat-modal","skill-modal"].forEach(id => {
+    document.getElementById(id).addEventListener("click", e => {
+      if (e.target===document.getElementById(id)) {
+        if (id==="cat-modal") closeCatModal(); else closeSkillModal();
+      }
+    });
+  });
+
+  // ── Seed default categories if none exist ────
+  async function seedIfEmpty() {
+    const snap = await getDocs(collection(db,"categories"));
+    if (!snap.empty) return;
+    const defaults = [
+      { name:"Graphic Design",   icon:"🎨", slug:"design",      description:"Branding, print, illustration",         skills:["Illustrator","Photoshop","InDesign","Canva"] },
+      { name:"UI/UX Design",     icon:"🖥️", slug:"uiux",        description:"User interfaces, prototyping",          skills:["Figma","Adobe XD","Sketch","Framer"] },
+      { name:"Front-end Dev",    icon:"💻", slug:"frontend",     description:"Web interfaces and interaction",        skills:["React","Vue","HTML/CSS","Tailwind","Next.js"] },
+      { name:"Back-end Dev",     icon:"⚙️", slug:"backend",      description:"APIs, databases, server logic",         skills:["Node.js","Laravel","Python","Django","PostgreSQL"] },
+      { name:"Full-stack Dev",   icon:"🔧", slug:"fullstack",    description:"End-to-end web development",            skills:["React","Node.js","MongoDB","Docker"] },
+      { name:"Mobile Dev",       icon:"📱", slug:"mobile",       description:"iOS, Android, cross-platform apps",     skills:["Flutter","React Native","Swift","Kotlin"] },
+      { name:"DevOps / Cloud",   icon:"☁️", slug:"devops",       description:"Infrastructure, CI/CD, deployment",     skills:["AWS","GCP","Docker","Kubernetes","GitHub Actions"] },
+      { name:"Copywriting",      icon:"✍️", slug:"copywriting",  description:"Content, articles, scripts, ads",       skills:["SEO Writing","Blogging","Ad Copy","Proofreading"] },
+      { name:"Video / Motion",   icon:"🎬", slug:"video",        description:"Video editing, motion graphics",        skills:["Premiere Pro","After Effects","DaVinci Resolve"] },
+      { name:"Photography",      icon:"📷", slug:"photo",        description:"Commercial, portrait, event photography",skills:["Lightroom","Capture One","Studio Lighting"] },
+      { name:"Social Media",     icon:"📣", slug:"social",       description:"Content creation and management",       skills:["Instagram","TikTok","Facebook Ads","Hootsuite"] },
+      { name:"SEO / Marketing",  icon:"🔍", slug:"seo",          description:"Search, growth, digital marketing",     skills:["Google Ads","SEMrush","Ahrefs","Analytics"] },
+      { name:"Audio Engineering",icon:"🎵", slug:"audio",        description:"Music production, sound design, mixing",skills:["Pro Tools","Ableton Live","Logic Pro","Sound Design","Mixing","Mastering"] },
+      { name:"3D / Modelling",   icon:"🧊", slug:"3d",           description:"3D modelling, rendering, animation",   skills:["Blender","Maya","Cinema 4D","3ds Max","ZBrush","Unreal Engine"] },
+      { name:"Project Mgmt",     icon:"📋", slug:"pm",           description:"Agile, scrum, team coordination",       skills:["Jira","Trello","Notion","Asana","Scrum"] },
+      { name:"Data / Analytics", icon:"📊", slug:"data",         description:"Data analysis, BI, visualization",      skills:["Python","R","Tableau","Power BI","SQL","Excel"] },
+    ];
+    for (const cat of defaults) {
+      await addDoc(collection(db,"categories"), { ...cat, isActive:true, createdAt:serverTimestamp() });
+    }
+  }
+
+  await seedIfEmpty();
+  await loadCategories();
+</script>
+</body>
+</html>

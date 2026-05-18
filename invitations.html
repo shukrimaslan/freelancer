@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gengstr — My Invitations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .inv-card {
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      margin-bottom:1rem;overflow:hidden;transition:box-shadow .15s;
+    }
+    .inv-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.08); }
+    .inv-card-header {
+      display:flex;align-items:flex-start;justify-content:space-between;
+      padding:1.1rem 1.25rem;gap:1rem;flex-wrap:wrap;
+    }
+    .inv-card-body { padding:0 1.25rem 1.1rem; }
+    .inv-card-footer {
+      border-top:1px solid var(--border);padding:.85rem 1.25rem;
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;
+      background:var(--bg);
+    }
+    .countdown {
+      display:inline-flex;align-items:center;gap:.4rem;
+      font-size:.8rem;font-weight:500;padding:.3rem .75rem;border-radius:99px;
+    }
+    .countdown.urgent { background:var(--danger-light);color:var(--danger); }
+    .countdown.normal { background:var(--warning-light);color:var(--warning); }
+    .countdown.plenty { background:var(--success-light);color:var(--success); }
+    .detail-grid {
+      display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem;
+      margin-bottom:1rem;
+    }
+    .detail-item { font-size:.825rem; }
+    .detail-item .label { color:var(--text-muted);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em; }
+    .detail-item .value { color:var(--text-primary);margin-top:.1rem; }
+
+    /* Decline modal */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem; }
+    .modal { background:var(--surface);border-radius:var(--radius-lg);
+      width:100%;max-width:440px;padding:1.75rem;box-shadow:0 8px 32px rgba(0,0,0,.12); }
+    .modal-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem; }
+    .close-btn { background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--text-muted); }
+
+    /* Extension modal */
+    .ext-reason { font-size:.875rem;color:var(--text-secondary);margin-bottom:1rem; }
+
+    .inv-tabs { display:flex;gap:.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border); }
+    .inv-tab-btn {
+      padding:.55rem 1rem;font-size:.875rem;font-weight:500;color:var(--text-secondary);
+      background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;
+      margin-bottom:-1px;transition:all .15s;
+    }
+    .inv-tab-btn.active { color:var(--brand);border-bottom-color:var(--brand); }
+    .inv-tab-btn .count {
+      display:inline-flex;align-items:center;justify-content:center;
+      width:18px;height:18px;border-radius:50%;background:var(--brand);color:white;
+      font-size:.7rem;font-weight:700;margin-left:.35rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <a class="navbar-brand" href="profile.html">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      gengstr
+    </a>
+    <div class="navbar-nav">
+      <a href="profile.html"      class="nav-link">My Profile</a>
+      <a href="invitations.html"  class="nav-link active">Invitations</a>
+      <a href="settings.html"     class="nav-link">Settings</a>
+    </div>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">F</div>
+      <span id="nav-name">Freelancer</span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container page-wrap" style="max-width:760px">
+  <div class="page-header">
+    <div>
+      <h1>Project Invitations</h1>
+      <p>Review and respond to project invitations. You have <strong>48 hours</strong> to respond to each.</p>
+    </div>
+  </div>
+
+  <div id="alert-box" style="display:none;margin-bottom:1rem"></div>
+
+  <div class="inv-tabs">
+    <button class="inv-tab-btn active" data-tab="pending">Pending <span class="count" id="count-pending">0</span></button>
+    <button class="inv-tab-btn" data-tab="accepted">Accepted</button>
+    <button class="inv-tab-btn" data-tab="declined">Declined</button>
+    <button class="inv-tab-btn" data-tab="expired">Expired / Cancelled</button>
+  </div>
+
+  <div id="loading" style="text-align:center;padding:3rem"><div class="spinner"></div></div>
+  <div id="content" style="display:none">
+    <div id="tab-pending"></div>
+    <div id="tab-accepted" style="display:none"></div>
+    <div id="tab-declined" style="display:none"></div>
+    <div id="tab-expired"  style="display:none"></div>
+  </div>
+</div>
+
+<!-- Decline modal -->
+<div class="modal-overlay" id="decline-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Decline invitation</h2>
+      <button class="close-btn" onclick="closeDeclineModal()">✕</button>
+    </div>
+    <p style="font-size:.875rem;color:var(--text-secondary);margin-bottom:1.25rem">
+      Please let the PM know why you're declining — this helps us improve how we match projects.
+    </p>
+    <div class="form-group">
+      <label for="decline-reason">Reason <span class="req">*</span></label>
+      <select id="decline-reason-select" onchange="handleDeclineSelect(this.value)" style="margin-bottom:.5rem">
+        <option value="">Select a reason…</option>
+        <option value="Too busy">Too busy / booked up</option>
+        <option value="Out of scope">Out of my scope / skill set</option>
+        <option value="Rate too low">Rate / budget too low</option>
+        <option value="Timeline doesn't suit">Timeline doesn't suit me</option>
+        <option value="Other">Other (please specify)</option>
+      </select>
+      <textarea id="decline-reason" rows="2" placeholder="Add more detail (optional)…"></textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem">
+      <button class="btn btn-ghost" onclick="closeDeclineModal()">Cancel</button>
+      <button class="btn btn-danger" id="btn-confirm-decline">Decline invitation</button>
+    </div>
+  </div>
+</div>
+
+<!-- Extension request modal -->
+<div class="modal-overlay" id="ext-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Request more time</h2>
+      <button class="close-btn" onclick="closeExtModal()">✕</button>
+    </div>
+    <p class="ext-reason">You can request a one-time 24-hour extension if you need more time to decide. Please provide a brief reason.</p>
+    <div class="form-group" style="margin-bottom:0">
+      <label for="ext-reason">Reason <span class="req">*</span></label>
+      <textarea id="ext-reason" rows="2" placeholder="e.g. I'm reviewing my schedule and need a bit more time…"></textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="closeExtModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-confirm-ext">Request extension</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import { guardAuth } from "./auth.js";
+  import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import {
+    collection, getDocs, doc, getDoc, updateDoc,
+    query, where, serverTimestamp, Timestamp, orderBy
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  const { user, userData } = await guardAuth(["freelancer"]);
+  const uid = user.uid;
+
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"F";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0]||"Me";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  // ── State ─────────────────────────────────────
+  let invitations  = [];
+  let projects     = {};
+  let pendingDeclineId = null;
+  let pendingExtId     = null;
+
+  // ── Load data ─────────────────────────────────
+  async function load() {
+    const snap = await getDocs(query(
+      collection(db,"invitations"),
+      where("freelancerId","==",uid),
+      orderBy("invitedAt","desc")
+    ));
+    invitations = [];
+    snap.forEach(d=>invitations.push({id:d.id,...d.data()}));
+
+    // Load project details for each invitation
+    const projectIds = [...new Set(invitations.map(i=>i.projectId))];
+    await Promise.all(projectIds.map(async pid=>{
+      const ps = await getDoc(doc(db,"projects",pid));
+      if(ps.exists()) projects[pid] = {id:ps.id,...ps.data()};
+    }));
+
+    document.getElementById("loading").style.display  = "none";
+    document.getElementById("content").style.display  = "block";
+
+    renderAll();
+    updateCounters();
+    startCountdownTimers();
+  }
+
+  function renderAll() {
+    renderTab("pending",  invitations.filter(i=>i.status==="pending"));
+    renderTab("accepted", invitations.filter(i=>i.status==="accepted"));
+    renderTab("declined", invitations.filter(i=>i.status==="declined"));
+    renderTab("expired",  invitations.filter(i=>["expired","cancelled"].includes(i.status)));
+  }
+
+  function renderTab(tabId, list) {
+    const el = document.getElementById("tab-"+tabId);
+    if(!list.length) {
+      el.innerHTML = `<div class="empty" style="padding:2rem">
+        <p>${tabId==="pending" ? "No pending invitations. Check back later!" : "Nothing here yet."}</p>
+      </div>`;
+      return;
+    }
+    el.innerHTML = list.map(inv=>renderInvCard(inv, tabId)).join("");
+  }
+
+  function renderInvCard(inv, tabId) {
+    const p       = projects[inv.projectId] || {};
+    const expires = inv.expiresAt?.toDate ? inv.expiresAt.toDate() : null;
+    const now     = new Date();
+    const hoursLeft = expires ? Math.max(0, (expires-now)/3600000) : 0;
+    const isPending = inv.status==="pending";
+
+    let countdownHtml = "";
+    if(isPending && expires) {
+      const cls = hoursLeft < 6 ? "urgent" : hoursLeft < 24 ? "normal" : "plenty";
+      const label = hoursLeft < 1
+        ? `${Math.round(hoursLeft*60)}m left`
+        : `${Math.round(hoursLeft)}h left`;
+      countdownHtml = `<span class="countdown ${cls}" id="cd-${inv.id}">⏱ ${label}</span>`;
+    }
+
+    const statusBadge = {
+      accepted:`<span class="tag tag-green">✓ Accepted</span>`,
+      declined:`<span class="tag tag-red">✗ Declined</span>`,
+      expired: `<span class="tag tag-gray">Expired</span>`,
+      cancelled:`<span class="tag tag-gray">Cancelled</span>`,
+    }[inv.status]||"";
+
+    const invDate = inv.invitedAt?.toDate
+      ? inv.invitedAt.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})
+      : "—";
+    const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}) : "—";
+
+    return `<div class="inv-card">
+      <div class="inv-card-header">
+        <div>
+          <h2 style="font-size:1rem;margin-bottom:.2rem">${p.title||"Unknown project"}</h2>
+          <div style="font-size:.825rem;color:var(--text-muted)">${p.clientName||"—"}</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+          ${countdownHtml}
+          ${statusBadge}
+        </div>
+      </div>
+      <div class="inv-card-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="label">Budget</div>
+            <div class="value">RM ${(p.budgetAmount||0).toLocaleString()} (${p.budgetType||"fixed"})</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Timeline</div>
+            <div class="value">${fmt(p.startDate)} → ${fmt(p.endDate)}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Categories</div>
+            <div class="value">${(p.categoryIds||[]).join(", ")||"—"}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Invited on</div>
+            <div class="value">${invDate}</div>
+          </div>
+        </div>
+        ${p.description ? `
+          <div style="font-size:.875rem;color:var(--text-secondary);line-height:1.65;
+            padding:.75rem;background:var(--bg);border-radius:var(--radius);margin-bottom:.75rem">
+            ${p.description}
+          </div>` : ""}
+        ${p.deliverables?.length ? `
+          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.5rem">
+            <strong style="color:var(--text-secondary)">Deliverables:</strong>
+            ${p.deliverables.join(" · ")}
+          </div>` : ""}
+        ${inv.declineReason ? `
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">
+            <strong>Reason given:</strong> ${inv.declineReason}
+          </div>` : ""}
+        ${inv.extensionRequested && inv.status==="pending" ? `
+          <div class="alert alert-info" style="margin-top:.75rem;font-size:.825rem">
+            ⏳ Extension requested. Waiting for PM approval.
+          </div>` : ""}
+      </div>
+      ${isPending ? `
+        <div class="inv-card-footer">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="acceptInvite('${inv.id}','${p.title||""}')">
+              ✓ Accept project
+            </button>
+            <button class="btn btn-ghost" onclick="openDeclineModal('${inv.id}')">
+              Decline
+            </button>
+          </div>
+          <div>
+            ${!inv.extensionRequested ? `
+              <button class="btn btn-ghost btn-sm" onclick="openExtModal('${inv.id}')">
+                🕐 Need more time?
+              </button>` : ""}
+          </div>
+        </div>` : `
+        <div class="inv-card-footer">
+          <span style="font-size:.8rem;color:var(--text-muted)">
+            ${inv.respondedAt?.toDate
+              ? "Responded " + inv.respondedAt.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"})
+              : inv.status==="expired" ? "Response window closed" : ""}
+          </span>
+        </div>`}
+    </div>`;
+  }
+
+  function updateCounters() {
+    const pending = invitations.filter(i=>i.status==="pending").length;
+    document.getElementById("count-pending").textContent = pending;
+    document.getElementById("count-pending").style.display = pending ? "inline-flex" : "none";
+  }
+
+  // ── Countdown timers ──────────────────────────
+  function startCountdownTimers() {
+    setInterval(()=>{
+      invitations.filter(i=>i.status==="pending").forEach(inv=>{
+        const el = document.getElementById("cd-"+inv.id);
+        if(!el) return;
+        const expires = inv.expiresAt?.toDate ? inv.expiresAt.toDate() : null;
+        if(!expires) return;
+        const hoursLeft = Math.max(0,(expires-new Date())/3600000);
+        if(hoursLeft<=0) {
+          el.textContent = "Expired";
+          el.className="countdown urgent";
+          return;
+        }
+        const cls = hoursLeft<6?"urgent":hoursLeft<24?"normal":"plenty";
+        const label = hoursLeft<1 ? `${Math.round(hoursLeft*60)}m left` : `${Math.round(hoursLeft)}h left`;
+        el.textContent = "⏱ "+label;
+        el.className = "countdown "+cls;
+      });
+    }, 60000); // update every minute
+  }
+
+  // ── Accept ────────────────────────────────────
+  window.acceptInvite = async (invId, projectTitle) => {
+    if(!confirm(`Accept the invitation for "${projectTitle}"? This will confirm your participation.`)) return;
+    const btn = event.target;
+    btn.disabled=true; btn.textContent="Accepting…";
+    try {
+      const inv = invitations.find(i=>i.id===invId);
+      await updateDoc(doc(db,"invitations",invId),{
+        status:"accepted", respondedAt:serverTimestamp()
+      });
+      // Mark project as in_progress and set confirmed freelancer
+      await updateDoc(doc(db,"projects",inv.projectId),{
+        status:"in_progress",
+        confirmedFreelancerId: uid,
+        updatedAt:serverTimestamp()
+      });
+      inv.status="accepted"; inv.respondedAt=Timestamp.now();
+      renderAll(); updateCounters();
+      showAlert("🎉 You've accepted the project! The PM will be in touch shortly.","success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); btn.disabled=false; btn.textContent="✓ Accept project"; }
+  };
+
+  // ── Decline modal ─────────────────────────────
+  window.openDeclineModal = (invId) => {
+    pendingDeclineId = invId;
+    document.getElementById("decline-reason-select").value="";
+    document.getElementById("decline-reason").value="";
+    document.getElementById("decline-modal").style.display="flex";
+  };
+  window.closeDeclineModal = () => document.getElementById("decline-modal").style.display="none";
+  window.handleDeclineSelect = (val) => {
+    if(val && val!=="Other") document.getElementById("decline-reason").value=val;
+    else if(val==="Other") document.getElementById("decline-reason").value="";
+  };
+
+  document.getElementById("btn-confirm-decline").addEventListener("click", async()=>{
+    const reason = document.getElementById("decline-reason").value.trim()
+      || document.getElementById("decline-reason-select").value;
+    if(!reason) return showAlert("Please provide a reason for declining.","error");
+    const btn=document.getElementById("btn-confirm-decline");
+    btn.disabled=true; btn.textContent="Declining…";
+    try {
+      await updateDoc(doc(db,"invitations",pendingDeclineId),{
+        status:"declined", declineReason:reason, respondedAt:serverTimestamp()
+      });
+      const inv=invitations.find(i=>i.id===pendingDeclineId);
+      if(inv){ inv.status="declined"; inv.declineReason=reason; inv.respondedAt=Timestamp.now(); }
+      closeDeclineModal();
+      renderAll(); updateCounters();
+      showAlert("Invitation declined. Thanks for letting us know.","success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Decline invitation";
+  });
+
+  // ── Extension modal ───────────────────────────
+  window.openExtModal = (invId) => {
+    pendingExtId = invId;
+    document.getElementById("ext-reason").value="";
+    document.getElementById("ext-modal").style.display="flex";
+  };
+  window.closeExtModal = () => document.getElementById("ext-modal").style.display="none";
+
+  document.getElementById("btn-confirm-ext").addEventListener("click", async()=>{
+    const reason=document.getElementById("ext-reason").value.trim();
+    if(!reason) return showAlert("Please provide a reason for your extension request.","error");
+    const btn=document.getElementById("btn-confirm-ext");
+    btn.disabled=true; btn.textContent="Requesting…";
+    try {
+      await updateDoc(doc(db,"invitations",pendingExtId),{
+        extensionRequested:true, extensionReason:reason, updatedAt:serverTimestamp()
+      });
+      const inv=invitations.find(i=>i.id===pendingExtId);
+      if(inv) inv.extensionRequested=true;
+      closeExtModal();
+      renderAll();
+      showAlert("Extension request sent. The PM will review it shortly.","success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Request extension";
+  });
+
+  // ── Tabs ──────────────────────────────────────
+  document.querySelectorAll(".inv-tab-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".inv-tab-btn").forEach(b=>b.classList.remove("active"));
+      ["pending","accepted","declined","expired"].forEach(t=>document.getElementById("tab-"+t).style.display="none");
+      btn.classList.add("active");
+      document.getElementById("tab-"+btn.dataset.tab).style.display="block";
+    });
+  });
+
+  // ── Alert ─────────────────────────────────────
+  function showAlert(msg,type="success"){
+    const box=document.getElementById("alert-box");
+    box.innerHTML=`<div class="alert alert-${type==="error"?"error":"success"}">${msg}</div>`;
+    box.style.display="block";
+    box.scrollIntoView({behavior:"smooth"});
+    if(type!=="error") setTimeout(()=>box.style.display="none",4000);
+  }
+
+  await load();
+</script>
+</body>
+</html>

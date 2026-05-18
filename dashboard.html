@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RosterMY — Dashboard</title>
+  <title>gengstr — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -55,7 +55,7 @@
         <div class="logo-dot">
           <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
-        RosterMY
+        gengstr
       </a>
       <div class="nav-user">
         <div class="avatar" id="nav-avatar">A</div>
@@ -85,6 +85,23 @@
         All freelancers
       </a>
 
+      <div class="sidebar-label" style="margin-top:.75rem">Projects</div>
+      <a class="sidebar-link" href="projects.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        All projects
+      </a>
+      <a class="sidebar-link" data-panel="extensions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Extension requests
+        <span class="pending-dot" id="ext-indicator" style="display:none"></span>
+      </a>
+
+      <div class="sidebar-label" style="margin-top:.75rem">Settings</div>
+      <a class="sidebar-link" href="categories.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+        Categories & Skills
+      </a>
+
       <div class="sidebar-label" style="margin-top:.75rem">Account</div>
       <button class="sidebar-link" id="sidebar-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -108,6 +125,13 @@
           <div class="stat-card"><div class="stat-label">Pending approval</div><div class="stat-value" id="stat-pending">—</div></div>
           <div class="stat-card"><div class="stat-label">Approved & active</div><div class="stat-value" id="stat-approved">—</div></div>
           <div class="stat-card"><div class="stat-label">Available now</div><div class="stat-value" id="stat-available">—</div></div>
+          <div class="stat-card" style="cursor:pointer" onclick="window.location.href='projects.html'"><div class="stat-label">Active projects</div><div class="stat-value" id="stat-projects">—</div><div class="stat-sub">↗ View all</div></div>
+          <div class="stat-card"><div class="stat-label">Pending invitations</div><div class="stat-value" id="stat-invites">—</div></div>
+        </div>
+
+        <div style="display:flex;gap:.75rem;margin:1.5rem 0;flex-wrap:wrap">
+          <a href="projects.html" class="btn btn-primary">+ New project</a>
+          <a href="categories.html" class="btn btn-outline">Manage categories</a>
         </div>
 
         <h2 style="margin:2rem 0 1rem">Recently registered</h2>
@@ -159,6 +183,19 @@
         </div>
       </div>
 
+      <!-- Extensions panel -->
+      <div id="panel-extensions" style="display:none">
+        <div class="page-header">
+          <div><h1>Extension requests</h1><p>Freelancers requesting more time to respond to invitations.</p></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Freelancer</th><th>Project</th><th>Reason</th><th>Invited</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody id="ext-tbody"><tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text-muted)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -179,7 +216,7 @@
     import { guardAuth } from "./auth.js";
     import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
     import {
-      collection, getDocs, doc, updateDoc, query, where, orderBy, serverTimestamp
+      collection, getDocs, doc, updateDoc, query, where, orderBy, serverTimestamp, Timestamp
     } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
     // ── Auth guard ────────────────────────────────
@@ -201,29 +238,43 @@
         link.classList.add("active");
         document.querySelectorAll("[id^='panel-']").forEach(p => p.style.display = "none");
         document.getElementById("panel-" + link.dataset.panel).style.display = "block";
+        if(link.dataset.panel === "extensions") renderExtensions();
       });
     });
 
-    // ── Load all freelancers ──────────────────────
-    let allFreelancers = [];
+    // ── State ─────────────────────────────────────
+    let allFreelancers  = [];
+    let allProjects     = [];
+    let allInvitations  = [];
 
     async function loadFreelancers() {
-      const snap = await getDocs(collection(db, "freelancers"));
-      allFreelancers = [];
-      snap.forEach(d => allFreelancers.push({ id: d.id, ...d.data() }));
+      const [fSnap, pSnap, iSnap] = await Promise.all([
+        getDocs(collection(db, "freelancers")),
+        getDocs(collection(db, "projects")),
+        getDocs(collection(db, "invitations"))
+      ]);
+      allFreelancers = []; fSnap.forEach(d => allFreelancers.push({ id: d.id, ...d.data() }));
+      allProjects    = []; pSnap.forEach(d => allProjects.push({ id: d.id, ...d.data() }));
+      allInvitations = []; iSnap.forEach(d => allInvitations.push({ id: d.id, ...d.data() }));
 
       // Stats
       const total     = allFreelancers.length;
       const pending   = allFreelancers.filter(f => !f.isApproved).length;
       const approved  = allFreelancers.filter(f =>  f.isApproved).length;
       const available = allFreelancers.filter(f =>  f.availability === "available" && f.isApproved).length;
+      const activeProj= allProjects.filter(p=>p.status==="in_progress"||p.status==="open").length;
+      const pendInvites= allInvitations.filter(i=>i.status==="pending").length;
+      const extRequests= allInvitations.filter(i=>i.extensionRequested&&i.status==="pending").length;
 
       document.getElementById("stat-total").textContent     = total;
       document.getElementById("stat-pending").textContent   = pending;
       document.getElementById("stat-approved").textContent  = approved;
       document.getElementById("stat-available").textContent = available;
+      document.getElementById("stat-projects").textContent  = activeProj;
+      document.getElementById("stat-invites").textContent   = pendInvites;
 
-      if (pending > 0) document.getElementById("pending-indicator").style.display = "inline-block";
+      if (pending > 0)     document.getElementById("pending-indicator").style.display = "inline-block";
+      if (extRequests > 0) document.getElementById("ext-indicator").style.display     = "inline-block";
 
       renderRecent();
       renderPending();
@@ -399,6 +450,61 @@
     document.getElementById("fl-modal").addEventListener("click", e => {
       if (e.target === document.getElementById("fl-modal")) closeModal();
     });
+
+    // ── Extension requests panel ──────────────────
+    function renderExtensions() {
+      const extList = allInvitations.filter(i=>i.extensionRequested && i.status==="pending");
+      const tbody   = document.getElementById("ext-tbody");
+      if(!extList.length){
+        tbody.innerHTML=`<tr><td colspan="6"><div class="empty">No extension requests.</div></td></tr>`;
+        return;
+      }
+      const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      tbody.innerHTML = extList.map(inv=>{
+        const fl = allFreelancers.find(f=>f.id===inv.freelancerId);
+        const pr = allProjects.find(p=>p.id===inv.projectId);
+        const expiresAt = inv.expiresAt?.toDate ? inv.expiresAt.toDate() : null;
+        return `<tr>
+          <td><strong>${fl?.fullName||inv.freelancerId}</strong></td>
+          <td>${pr?.title||inv.projectId}</td>
+          <td style="max-width:200px;font-size:.8rem;color:var(--text-secondary)">${inv.extensionReason||"—"}</td>
+          <td style="font-size:.8rem">${fmt(inv.invitedAt)}</td>
+          <td style="font-size:.8rem">${fmt(inv.expiresAt)}</td>
+          <td style="display:flex;gap:.4rem">
+            <button class="btn btn-primary btn-sm" onclick="grantExtension('${inv.id}')">Grant +24h</button>
+            <button class="btn btn-ghost btn-sm"   onclick="denyExtension('${inv.id}')">Deny</button>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+
+    window.grantExtension = async (invId) => {
+      try {
+        const inv = allInvitations.find(i=>i.id===invId);
+        const currentExpiry = inv?.expiresAt?.toDate ? inv.expiresAt.toDate() : new Date();
+        const newExpiry = new Date(currentExpiry.getTime() + 24*3600*1000);
+        await updateDoc(doc(db,"invitations",invId),{
+          extensionGranted:true,
+          expiresAt: Timestamp.fromDate(newExpiry),
+          updatedAt: serverTimestamp()
+        });
+        if(inv){ inv.extensionGranted=true; inv.expiresAt=Timestamp.fromDate(newExpiry); }
+        document.getElementById("ext-indicator").style.display="none";
+        renderExtensions();
+      } catch(e){ alert("Error: "+e.message); }
+    };
+
+    window.denyExtension = async (invId) => {
+      if(!confirm("Deny this extension request? The freelancer's deadline stays unchanged.")) return;
+      try {
+        await updateDoc(doc(db,"invitations",invId),{
+          extensionRequested:false, updatedAt:serverTimestamp()
+        });
+        const inv=allInvitations.find(i=>i.id===invId);
+        if(inv) inv.extensionRequested=false;
+        renderExtensions();
+      } catch(e){ alert("Error: "+e.message); }
+    };
 
     // ── Init ──────────────────────────────────────
     loadFreelancers();

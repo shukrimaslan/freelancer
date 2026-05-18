@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gengstr — Projects</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .sidebar{width:220px;min-width:220px;border-right:1px solid var(--border);
+      padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.25rem;
+      position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;}
+    .sidebar-label{font-size:.7rem;font-weight:600;color:var(--text-muted);
+      text-transform:uppercase;letter-spacing:.06em;padding:.4rem .6rem .15rem;}
+    .sidebar-link{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;border-radius:8px;
+      font-size:.875rem;font-weight:500;color:var(--text-secondary);text-decoration:none;
+      cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;}
+    .sidebar-link svg{width:16px;height:16px;flex-shrink:0;}
+    .sidebar-link:hover,.sidebar-link.active{background:var(--brand-light);color:var(--brand);}
+    .main-content{flex:1;padding:1.75rem;overflow-y:auto;min-width:0;}
+    .app-body{display:flex;height:calc(100vh - 57px);}
+
+    /* Project cards */
+    .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;}
+    .proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:1.25rem;transition:box-shadow .15s;cursor:pointer;}
+    .proj-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);}
+    .proj-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;}
+    .proj-title{font-weight:600;font-size:.95rem;line-height:1.3;}
+    .proj-client{font-size:.8rem;color:var(--text-muted);margin-top:.2rem;}
+    .proj-meta{display:flex;gap:1rem;margin-top:.85rem;flex-wrap:wrap;}
+    .proj-meta-item{font-size:.8rem;color:var(--text-secondary);}
+    .proj-meta-item strong{color:var(--text-primary);}
+    .proj-footer{border-top:1px solid var(--border);margin-top:.85rem;padding-top:.75rem;
+      display:flex;justify-content:space-between;align-items:center;}
+
+    /* Status badges */
+    .status-draft    {background:#f3f4f6;color:#6b7280;}
+    .status-open     {background:var(--brand-light);color:var(--brand);}
+    .status-active   {background:var(--success-light);color:var(--success);}
+    .status-completed{background:#ede9fe;color:#7c3aed;}
+    .status-cancelled{background:var(--danger-light);color:var(--danger);}
+
+    /* Drawer / modal */
+    .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:flex;justify-content:flex-end;}
+    .drawer{background:var(--surface);width:100%;max-width:560px;height:100vh;overflow-y:auto;
+      padding:1.75rem;box-shadow:-8px 0 32px rgba(0,0,0,.1);}
+    .drawer-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+    .close-btn{background:none;border:none;font-size:1.25rem;cursor:pointer;color:var(--text-muted);}
+
+    /* Invite panel inside drawer */
+    .fl-invite-row{display:flex;align-items:center;justify-content:space-between;
+      padding:.65rem .85rem;border-radius:var(--radius);border:1px solid var(--border);
+      margin-bottom:.5rem;transition:border-color .15s;}
+    .fl-invite-row:hover{border-color:var(--brand);}
+    .fl-invite-info{display:flex;align-items:center;gap:.65rem;}
+    .fl-mini-avatar{width:34px;height:34px;border-radius:50%;background:var(--brand);
+      color:white;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
+    /* Timeline */
+    .timeline{border-left:2px solid var(--border);margin-left:.75rem;padding-left:1.25rem;}
+    .timeline-item{position:relative;padding-bottom:1.25rem;}
+    .timeline-item::before{content:'';position:absolute;left:-1.45rem;top:.3rem;
+      width:10px;height:10px;border-radius:50%;background:var(--brand);border:2px solid var(--surface);}
+    .timeline-item:last-child{padding-bottom:0;}
+    .timeline-time{font-size:.75rem;color:var(--text-muted);}
+    .timeline-text{font-size:.875rem;margin-top:.15rem;}
+
+    .section-sep{border:none;border-top:1px solid var(--border);margin:1.25rem 0;}
+    .form-section-title{font-size:.75rem;font-weight:600;color:var(--text-muted);
+      text-transform:uppercase;letter-spacing:.06em;margin-bottom:.85rem;}
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <a class="navbar-brand" href="dashboard.html">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      gengstr
+    </a>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">A</div>
+      <span id="nav-name">Admin</span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-label">Manage</div>
+    <a class="sidebar-link" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a class="sidebar-link active" href="projects.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      Projects
+    </a>
+    <a class="sidebar-link" href="categories.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      Categories & Skills
+    </a>
+    <div class="sidebar-label" style="margin-top:.75rem">Filters</div>
+    <button class="sidebar-link" id="filter-all" onclick="filterProjects('all',this)">All projects</button>
+    <button class="sidebar-link" id="filter-open" onclick="filterProjects('open',this)">Open</button>
+    <button class="sidebar-link" id="filter-active" onclick="filterProjects('in_progress',this)">In progress</button>
+    <button class="sidebar-link" id="filter-completed" onclick="filterProjects('completed',this)">Completed</button>
+    <button class="sidebar-link" id="filter-draft" onclick="filterProjects('draft',this)">Drafts</button>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Projects</h1>
+        <p>Create and manage all client projects.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-new-project">+ New project</button>
+    </div>
+    <div id="alert-box" style="display:none;margin-bottom:1rem"></div>
+    <div class="proj-grid" id="proj-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Project create / edit drawer -->
+<div class="drawer-overlay" id="form-drawer" style="display:none">
+  <div class="drawer">
+    <div class="drawer-header">
+      <h2 id="drawer-title">New project</h2>
+      <button class="close-btn" onclick="closeDrawer()">✕</button>
+    </div>
+
+    <div class="form-section-title">Project details</div>
+    <div class="form-group">
+      <label for="p-title">Project title <span class="req">*</span></label>
+      <input type="text" id="p-title" placeholder="e.g. Company Website Redesign">
+    </div>
+    <div class="form-group">
+      <label for="p-client">Client name <span class="req">*</span></label>
+      <input type="text" id="p-client" placeholder="e.g. Syarikat ABC Sdn Bhd">
+    </div>
+    <div class="form-group">
+      <label for="p-desc">Description / scope <span class="req">*</span></label>
+      <textarea id="p-desc" rows="3" placeholder="Describe what the freelancer will be working on…"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="p-deliverables">Deliverables</label>
+      <input type="text" id="p-deliverables" placeholder="e.g. Wireframes, Final design files, Handoff (comma-separated)">
+      <span class="form-hint">Comma-separated list of expected outputs.</span>
+    </div>
+
+    <hr class="section-sep">
+    <div class="form-section-title">Categories & skills needed</div>
+    <div class="form-group">
+      <label>Categories <span class="req">*</span></label>
+      <div class="tag-picker" id="proj-cat-picker" style="margin-top:.4rem"></div>
+    </div>
+    <div class="form-group">
+      <label for="p-tags">Skill tags</label>
+      <input type="text" id="p-tags" placeholder="e.g. React, Figma (press Enter to add)">
+      <div class="tag-picker" id="p-tags-out" style="margin-top:.4rem"></div>
+    </div>
+
+    <hr class="section-sep">
+    <div class="form-section-title">Budget & timeline</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="p-budget-type">Budget type</label>
+        <select id="p-budget-type">
+          <option value="fixed">Fixed price</option>
+          <option value="hourly">Hourly</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="p-budget">Budget (RM) <span class="req">*</span></label>
+        <input type="number" id="p-budget" placeholder="e.g. 3000" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="p-start">Start date</label>
+        <input type="date" id="p-start">
+      </div>
+      <div class="form-group">
+        <label for="p-end">End date</label>
+        <input type="date" id="p-end">
+      </div>
+    </div>
+
+    <hr class="section-sep">
+    <div class="form-section-title">Status</div>
+    <div class="form-group" style="margin-bottom:0">
+      <select id="p-status">
+        <option value="draft">Draft — not visible to freelancers yet</option>
+        <option value="open" selected>Open — ready to invite freelancers</option>
+      </select>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.75rem">
+      <button class="btn btn-ghost" onclick="closeDrawer()">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-project">Save project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project detail drawer -->
+<div class="drawer-overlay" id="detail-drawer" style="display:none">
+  <div class="drawer">
+    <div class="drawer-header">
+      <div>
+        <h2 id="detail-title" style="font-size:1.1rem"></h2>
+        <div id="detail-client" style="font-size:.825rem;color:var(--text-muted);margin-top:.15rem"></div>
+      </div>
+      <button class="close-btn" onclick="closeDetailDrawer()">✕</button>
+    </div>
+
+    <!-- Status + quick actions -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem" id="detail-actions"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="invite">Invite freelancers</button>
+      <button class="tab-btn" data-tab="invitations">Invitations</button>
+      <button class="tab-btn" data-tab="activity">Activity</button>
+    </div>
+
+    <div class="tab-panel active" id="dtab-overview"></div>
+    <div class="tab-panel" id="dtab-invite"></div>
+    <div class="tab-panel" id="dtab-invitations"></div>
+    <div class="tab-panel" id="dtab-activity"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import { guardAuth } from "./auth.js";
+  import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import {
+    collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc,
+    serverTimestamp, query, orderBy, where, arrayUnion, Timestamp
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  // ── Auth ──────────────────────────────────────
+  const { user, userData } = await guardAuth(["admin","pm"]);
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"A";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0]||"Admin";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  // ── State ─────────────────────────────────────
+  let projects        = [];
+  let freelancers     = [];
+  let categories      = [];
+  let invitations     = [];
+  let editingProjectId = null;
+  let currentDetailId  = null;
+  let selProjCats      = [];
+  let selProjTags      = [];
+  let currentFilter    = "all";
+
+  // ── Load data ─────────────────────────────────
+  async function loadAll() {
+    const [pSnap, fSnap, cSnap, iSnap] = await Promise.all([
+      getDocs(query(collection(db,"projects"), orderBy("createdAt","desc"))),
+      getDocs(query(collection(db,"freelancers"), where("isApproved","==",true))),
+      getDocs(query(collection(db,"categories"), orderBy("name"))),
+      getDocs(collection(db,"invitations"))
+    ]);
+    projects    = []; pSnap.forEach(d=>projects.push({id:d.id,...d.data()}));
+    freelancers = []; fSnap.forEach(d=>freelancers.push({id:d.id,...d.data()}));
+    categories  = []; cSnap.forEach(d=>categories.push({id:d.id,...d.data()}));
+    invitations = []; iSnap.forEach(d=>invitations.push({id:d.id,...d.data()}));
+    buildCatPicker();
+    renderProjects();
+  }
+
+  // ── Render project grid ───────────────────────
+  function renderProjects() {
+    const grid = document.getElementById("proj-grid");
+    let list = [...projects];
+    if (currentFilter !== "all") list = list.filter(p=>p.status===currentFilter);
+
+    if (!list.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1" class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        <p>No projects yet.</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map(p => {
+      const invCount   = invitations.filter(i=>i.projectId===p.id).length;
+      const pendCount  = invitations.filter(i=>i.projectId===p.id&&i.status==="pending").length;
+      const statusCls  = `status-${p.status}`;
+      const statusLabel= { draft:"Draft", open:"Open", in_progress:"In progress", completed:"Completed", cancelled:"Cancelled" }[p.status]||p.status;
+      const start = p.startDate?.toDate ? p.startDate.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}) : "—";
+      const end   = p.endDate?.toDate   ? p.endDate.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"})   : "—";
+      return `
+        <div class="proj-card" onclick="openDetail('${p.id}')">
+          <div class="proj-card-top">
+            <div>
+              <div class="proj-title">${p.title}</div>
+              <div class="proj-client">${p.clientName||"—"}</div>
+            </div>
+            <span class="tag ${statusCls}" style="white-space:nowrap">${statusLabel}</span>
+          </div>
+          <div style="font-size:.825rem;color:var(--text-secondary);line-height:1.5;
+            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+            ${p.description||""}
+          </div>
+          <div class="proj-meta">
+            <div class="proj-meta-item">💰 <strong>RM ${(p.budgetAmount||0).toLocaleString()}</strong></div>
+            <div class="proj-meta-item">📅 ${start} → ${end}</div>
+          </div>
+          <div class="proj-footer">
+            <div style="font-size:.8rem;color:var(--text-muted)">
+              ${(p.categoryIds||[]).slice(0,2).join(", ")||"No categories"}
+            </div>
+            <div style="font-size:.8rem;color:var(--text-muted)">
+              ${invCount} invite${invCount!==1?"s":""}${pendCount?" · "+pendCount+" pending":""}
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ── Filter ────────────────────────────────────
+  window.filterProjects = (status, el) => {
+    currentFilter = status;
+    document.querySelectorAll(".sidebar-link[id^='filter-']").forEach(b=>b.classList.remove("active"));
+    el.classList.add("active");
+    renderProjects();
+  };
+  document.getElementById("filter-all").classList.add("active");
+
+  // ── Build category picker ─────────────────────
+  function buildCatPicker() {
+    const picker = document.getElementById("proj-cat-picker");
+    picker.innerHTML = categories.map(c=>`
+      <span class="tag-pill" data-val="${c.id}" onclick="toggleCat(this)">${c.icon} ${c.name}</span>
+    `).join("");
+  }
+
+  window.toggleCat = (el) => {
+    el.classList.toggle("selected");
+    const v = el.dataset.val;
+    el.classList.contains("selected") ? selProjCats.push(v) : selProjCats.splice(selProjCats.indexOf(v),1);
+  };
+
+  // Tag input
+  const tagsInput = document.getElementById("p-tags");
+  const tagsOut   = document.getElementById("p-tags-out");
+  tagsInput.addEventListener("keydown", e=>{
+    if(e.key==="Enter"||e.key===","){
+      e.preventDefault();
+      const val = tagsInput.value.replace(",","").trim();
+      if(val && !selProjTags.includes(val)){
+        selProjTags.push(val);
+        const pill=document.createElement("span");
+        pill.className="tag-pill selected";pill.textContent=val;
+        pill.onclick=()=>{selProjTags.splice(selProjTags.indexOf(val),1);pill.remove();};
+        tagsOut.appendChild(pill);
+      }
+      tagsInput.value="";
+    }
+  });
+
+  // ── New project drawer ────────────────────────
+  document.getElementById("btn-new-project").addEventListener("click", ()=>{
+    editingProjectId = null;
+    document.getElementById("drawer-title").textContent = "New project";
+    clearForm();
+    document.getElementById("form-drawer").style.display = "flex";
+  });
+
+  function clearForm() {
+    ["p-title","p-client","p-desc","p-deliverables","p-budget","p-tags"].forEach(id=>{
+      document.getElementById(id).value="";
+    });
+    document.getElementById("p-budget-type").value = "fixed";
+    document.getElementById("p-status").value      = "open";
+    document.getElementById("p-start").value = "";
+    document.getElementById("p-end").value   = "";
+    selProjCats=[]; selProjTags=[];
+    document.querySelectorAll("#proj-cat-picker .tag-pill").forEach(p=>p.classList.remove("selected"));
+    document.getElementById("p-tags-out").innerHTML="";
+  }
+
+  window.closeDrawer = () => document.getElementById("form-drawer").style.display="none";
+
+  // ── Save project ──────────────────────────────
+  document.getElementById("btn-save-project").addEventListener("click", async()=>{
+    const title  = document.getElementById("p-title").value.trim();
+    const client = document.getElementById("p-client").value.trim();
+    const desc   = document.getElementById("p-desc").value.trim();
+    const budget = parseFloat(document.getElementById("p-budget").value)||0;
+    if(!title||!client||!desc)   return showAlert("Please fill in title, client, and description.","error");
+    if(!selProjCats.length)      return showAlert("Please select at least one category.","error");
+    if(!budget)                  return showAlert("Please enter a budget amount.","error");
+
+    const startVal = document.getElementById("p-start").value;
+    const endVal   = document.getElementById("p-end").value;
+
+    const data = {
+      title, clientName:client, description:desc,
+      deliverables: document.getElementById("p-deliverables").value.split(",").map(s=>s.trim()).filter(Boolean),
+      categoryIds: selProjCats,
+      tags:        selProjTags,
+      budgetType:  document.getElementById("p-budget-type").value,
+      budgetAmount: budget,
+      currency:    "MYR",
+      startDate:   startVal ? Timestamp.fromDate(new Date(startVal)) : null,
+      endDate:     endVal   ? Timestamp.fromDate(new Date(endVal))   : null,
+      status:      document.getElementById("p-status").value,
+      createdBy:   user.uid,
+      pmId:        user.uid,
+      shortlistedFreelancers: [],
+      confirmedFreelancerId: null,
+      updatedAt: serverTimestamp()
+    };
+
+    const btn = document.getElementById("btn-save-project");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      if (editingProjectId) {
+        await updateDoc(doc(db,"projects",editingProjectId), data);
+        const idx = projects.findIndex(p=>p.id===editingProjectId);
+        if(idx>-1) projects[idx]={...projects[idx],...data};
+      } else {
+        data.createdAt = serverTimestamp();
+        const ref = await addDoc(collection(db,"projects"), data);
+        projects.unshift({id:ref.id,...data});
+      }
+      renderProjects();
+      closeDrawer();
+      showAlert("Project saved.","success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save project";
+  });
+
+  // ── Detail drawer ─────────────────────────────
+  window.openDetail = async (projectId) => {
+    currentDetailId = projectId;
+    const p = projects.find(pr=>pr.id===projectId);
+    if(!p) return;
+
+    document.getElementById("detail-title").textContent  = p.title;
+    document.getElementById("detail-client").textContent = p.clientName;
+
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    document.querySelector(".tab-btn[data-tab='overview']").classList.add("active");
+    document.getElementById("dtab-overview").classList.add("active");
+
+    // Tab listeners
+    document.querySelectorAll("#detail-drawer .tab-btn").forEach(btn=>{
+      btn.onclick = ()=>{
+        document.querySelectorAll("#detail-drawer .tab-btn").forEach(b=>b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("dtab-"+btn.dataset.tab).classList.add("active");
+        if(btn.dataset.tab==="invite")      renderInviteTab(p);
+        if(btn.dataset.tab==="invitations") renderInvitationsTab(projectId);
+        if(btn.dataset.tab==="activity")    renderActivityTab(p);
+      };
+    });
+
+    // Status actions
+    const statusMap = { draft:"Draft", open:"Open", in_progress:"In progress", completed:"Completed", cancelled:"Cancelled" };
+    const next = { draft:"open", open:"in_progress", in_progress:"completed" };
+    const actions = document.getElementById("detail-actions");
+    actions.innerHTML = `<span class="tag status-${p.status}">${statusMap[p.status]||p.status}</span>`;
+    if(next[p.status]) {
+      const nextLabel = { open:"Mark open", in_progress:"Mark in progress", completed:"Mark completed" }[next[p.status]];
+      actions.innerHTML += `<button class="btn btn-outline btn-sm" onclick="advanceStatus('${projectId}','${next[p.status]}')">→ ${nextLabel}</button>`;
+    }
+    actions.innerHTML += `<button class="btn btn-ghost btn-sm" onclick="openEdit('${projectId}')">Edit</button>`;
+    if(p.status!=="completed"&&p.status!=="cancelled"){
+      actions.innerHTML += `<button class="btn btn-danger btn-sm" onclick="cancelProject('${projectId}')">Cancel</button>`;
+    }
+
+    renderOverviewTab(p);
+    document.getElementById("detail-drawer").style.display = "flex";
+  };
+
+  function renderOverviewTab(p) {
+    const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}) : "—";
+    const cats = (p.categoryIds||[]).map(id=>{ const c=categories.find(x=>x.id===id); return c?`${c.icon} ${c.name}`:id; }).join(", ") || "—";
+    document.getElementById("dtab-overview").innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem">
+        ${row("Client",    p.clientName||"—")}
+        ${row("Budget",    `RM ${(p.budgetAmount||0).toLocaleString()} (${p.budgetType||"fixed"})`)}
+        ${row("Timeline",  `${fmt(p.startDate)} → ${fmt(p.endDate)}`)}
+        ${row("Categories",cats)}
+        ${row("Tags",      (p.tags||[]).join(", ")||"—")}
+        ${row("Status",    `<span class="tag status-${p.status}">${p.status}</span>`)}
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="form-section-title">Description</div>
+        <p style="font-size:.875rem;color:var(--text-primary);line-height:1.7">${p.description||"—"}</p>
+      </div>
+      ${p.deliverables?.length ? `
+        <div>
+          <div class="form-section-title">Deliverables</div>
+          <ul style="padding-left:1.25rem;font-size:.875rem;color:var(--text-primary);line-height:1.8">
+            ${p.deliverables.map(d=>`<li>${d}</li>`).join("")}
+          </ul>
+        </div>` : ""}
+    `;
+  }
+
+  function row(label,val){
+    return `<div style="display:flex;gap:.5rem;font-size:.875rem;padding:.4rem 0;border-bottom:1px solid var(--border)">
+      <span style="width:110px;min-width:110px;color:var(--text-muted);font-weight:500">${label}</span>
+      <span>${val}</span>
+    </div>`;
+  }
+
+  function renderInviteTab(p) {
+    // Filter approved freelancers not yet invited
+    const alreadyInvited = invitations.filter(i=>i.projectId===p.id).map(i=>i.freelancerId);
+    let list = freelancers.filter(f=>f.availability!=="busy");
+
+    // Show category match first
+    list.sort((a,b)=>{
+      const aMatch = (a.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c)) ? 1:0;
+      const bMatch = (b.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c)) ? 1:0;
+      return bMatch-aMatch;
+    });
+
+    const el = document.getElementById("dtab-invite");
+    if(!list.length){ el.innerHTML=`<p style="color:var(--text-muted);font-size:.875rem">No approved freelancers available.</p>`; return; }
+
+    el.innerHTML = `
+      <div style="margin-bottom:1rem">
+        <input type="text" id="invite-search" placeholder="Search freelancer…" oninput="filterInviteList(this.value,'${p.id}')">
+      </div>
+      <div id="invite-list">
+        ${list.map(f=>{
+          const init   = f.fullName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
+          const invited= alreadyInvited.includes(f.id);
+          const avail  = {available:"🟢 Available",open_to_offers:"🟡 Open",busy:"🔴 Busy"}[f.availability]||"";
+          const match  = (f.categoryIds||[]).some(c=>(p.categoryIds||[]).includes(c));
+          return `<div class="fl-invite-row" id="irow-${f.id}">
+            <div class="fl-invite-info">
+              <div class="fl-mini-avatar">${init}</div>
+              <div>
+                <div style="font-size:.875rem;font-weight:600">${f.fullName} ${match?'<span class="tag tag-brand" style="font-size:.7rem;padding:.1rem .45rem">Match</span>':''}</div>
+                <div style="font-size:.78rem;color:var(--text-muted)">${(f.categoryIds||[]).slice(0,2).join(", ")||"—"} · ${avail}</div>
+              </div>
+            </div>
+            ${invited
+              ? `<span class="tag tag-gray" style="font-size:.78rem">Invited</span>`
+              : `<button class="btn btn-primary btn-sm" onclick="sendInvite('${p.id}','${f.id}','${f.fullName}')">Invite</button>`
+            }
+          </div>`;
+        }).join("")}
+      </div>`;
+  }
+
+  window.filterInviteList = (val, projectId) => {
+    const q = val.toLowerCase();
+    document.querySelectorAll(".fl-invite-row").forEach(row=>{
+      const name = row.querySelector(".fl-invite-info div div").textContent.toLowerCase();
+      row.style.display = name.includes(q) ? "flex" : "none";
+    });
+  };
+
+  // ── Send invitation ───────────────────────────
+  window.sendInvite = async (projectId, freelancerId, name) => {
+    const btn = event.target;
+    btn.disabled=true; btn.textContent="Sending…";
+    try {
+      const expiresAt = new Date(); expiresAt.setHours(expiresAt.getHours()+48);
+      const ref = await addDoc(collection(db,"invitations"),{
+        projectId, freelancerId, pmId:user.uid,
+        status:"pending",
+        declineReason:"", extensionRequested:false, extensionGranted:false,
+        invitedAt:    serverTimestamp(),
+        expiresAt:    Timestamp.fromDate(expiresAt),
+        respondedAt:  null,
+        notificationSentAt: serverTimestamp()
+      });
+      invitations.push({id:ref.id,projectId,freelancerId,pmId:user.uid,status:"pending"});
+      // Update shortlist
+      await updateDoc(doc(db,"projects",projectId),{ shortlistedFreelancers:arrayUnion(freelancerId) });
+      btn.textContent="Invited ✓"; btn.className="btn btn-ghost btn-sm";
+      showAlert(`Invitation sent to ${name}.`,"success");
+    } catch(e){ showAlert("Error: "+e.message,"error"); btn.disabled=false; btn.textContent="Invite"; }
+  };
+
+  function renderInvitationsTab(projectId) {
+    const list = invitations.filter(i=>i.projectId===projectId);
+    const el   = document.getElementById("dtab-invitations");
+    if(!list.length){ el.innerHTML=`<p style="color:var(--text-muted);font-size:.875rem;padding:.5rem 0">No invitations sent yet.</p>`; return; }
+
+    const statusColors = { pending:"tag-amber", accepted:"tag-green", declined:"tag-red", expired:"tag-gray", cancelled:"tag-gray" };
+    el.innerHTML = list.map(inv=>{
+      const fl      = freelancers.find(f=>f.id===inv.freelancerId);
+      const name    = fl?.fullName||inv.freelancerId;
+      const expires = inv.expiresAt?.toDate ? inv.expiresAt.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      const init    = name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+      return `<div class="fl-invite-row" style="margin-bottom:.5rem">
+        <div class="fl-invite-info">
+          <div class="fl-mini-avatar">${init}</div>
+          <div>
+            <div style="font-size:.875rem;font-weight:600">${name}</div>
+            <div style="font-size:.78rem;color:var(--text-muted)">
+              Expires ${expires}
+              ${inv.declineReason?` · Reason: "${inv.declineReason}"`:""}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem">
+          <span class="tag ${statusColors[inv.status]||"tag-gray"}">${inv.status}</span>
+          ${inv.status==="pending"?`<button class="btn btn-danger btn-sm" onclick="cancelInvite('${inv.id}')">Cancel</button>`:""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  window.cancelInvite = async (invId) => {
+    if(!confirm("Cancel this invitation?")) return;
+    try {
+      await updateDoc(doc(db,"invitations",invId),{status:"cancelled",updatedAt:serverTimestamp()});
+      const idx=invitations.findIndex(i=>i.id===invId);
+      if(idx>-1) invitations[idx].status="cancelled";
+      renderInvitationsTab(currentDetailId);
+    } catch(e){ showAlert("Error: "+e.message,"error"); }
+  };
+
+  function renderActivityTab(p) {
+    const fmt = ts => ts?.toDate ? ts.toDate().toLocaleString("en-MY",{dateStyle:"medium",timeStyle:"short"}) : "—";
+    const invList = invitations.filter(i=>i.projectId===p.id);
+    const events  = [
+      { time:p.createdAt, text:"Project created" },
+      ...invList.map(i=>({ time:i.invitedAt, text:`Invitation sent to ${freelancers.find(f=>f.id===i.freelancerId)?.fullName||i.freelancerId}` })),
+      ...invList.filter(i=>i.respondedAt).map(i=>({ time:i.respondedAt, text:`${freelancers.find(f=>f.id===i.freelancerId)?.fullName||i.freelancerId} ${i.status} the invitation` })),
+    ].filter(e=>e.time).sort((a,b)=>(b.time?.seconds||0)-(a.time?.seconds||0));
+
+    const el = document.getElementById("dtab-activity");
+    el.innerHTML = events.length ? `<div class="timeline">${events.map(e=>`
+      <div class="timeline-item">
+        <div class="timeline-time">${fmt(e.time)}</div>
+        <div class="timeline-text">${e.text}</div>
+      </div>`).join("")}</div>`
+      : `<p style="color:var(--text-muted);font-size:.875rem">No activity yet.</p>`;
+  }
+
+  // ── Status management ─────────────────────────
+  window.advanceStatus = async (projectId, newStatus) => {
+    try {
+      await updateDoc(doc(db,"projects",projectId),{status:newStatus,updatedAt:serverTimestamp()});
+      const idx=projects.findIndex(p=>p.id===projectId);
+      if(idx>-1) projects[idx].status=newStatus;
+      renderProjects();
+      openDetail(projectId);
+    } catch(e){ showAlert("Error: "+e.message,"error"); }
+  };
+
+  window.cancelProject = async (projectId) => {
+    if(!confirm("Cancel this project?")) return;
+    await advanceStatus(projectId,"cancelled");
+  };
+
+  window.openEdit = (projectId) => {
+    editingProjectId = projectId;
+    const p = projects.find(pr=>pr.id===projectId);
+    if(!p) return;
+    document.getElementById("drawer-title").textContent = "Edit project";
+    document.getElementById("p-title").value       = p.title||"";
+    document.getElementById("p-client").value      = p.clientName||"";
+    document.getElementById("p-desc").value        = p.description||"";
+    document.getElementById("p-deliverables").value= (p.deliverables||[]).join(", ");
+    document.getElementById("p-budget").value      = p.budgetAmount||"";
+    document.getElementById("p-budget-type").value = p.budgetType||"fixed";
+    document.getElementById("p-status").value      = p.status||"draft";
+    document.getElementById("p-start").value = p.startDate?.toDate ? p.startDate.toDate().toISOString().split("T")[0] : "";
+    document.getElementById("p-end").value   = p.endDate?.toDate   ? p.endDate.toDate().toISOString().split("T")[0]   : "";
+    selProjCats = [...(p.categoryIds||[])];
+    selProjTags = [...(p.tags||[])];
+    document.querySelectorAll("#proj-cat-picker .tag-pill").forEach(pill=>{
+      pill.classList.toggle("selected", selProjCats.includes(pill.dataset.val));
+    });
+    document.getElementById("p-tags-out").innerHTML = selProjTags.map(t=>`
+      <span class="tag-pill selected" onclick="this.remove();selProjTags.splice(selProjTags.indexOf('${t}'),1)">${t}</span>`).join("");
+    closeDetailDrawer();
+    document.getElementById("form-drawer").style.display="flex";
+  };
+
+  window.closeDetailDrawer = () => document.getElementById("detail-drawer").style.display="none";
+
+  // Close on backdrop
+  document.getElementById("form-drawer").addEventListener("click",e=>{ if(e.target===document.getElementById("form-drawer")) closeDrawer(); });
+  document.getElementById("detail-drawer").addEventListener("click",e=>{ if(e.target===document.getElementById("detail-drawer")) closeDetailDrawer(); });
+
+  // ── Alert ─────────────────────────────────────
+  function showAlert(msg,type="success"){
+    const box=document.getElementById("alert-box");
+    box.innerHTML=`<div class="alert alert-${type==="error"?"error":"success"}">${msg}</div>`;
+    box.style.display="block";
+    if(type!=="error") setTimeout(()=>box.style.display="none",3500);
+  }
+
+  await loadAll();
+</script>
+</body>
+</html>
