@@ -233,20 +233,7 @@
             <p>Select all service categories you offer.</p>
           </div>
           <div class="tag-picker" id="cat-picker">
-            <span class="tag-pill" data-val="design">🎨 Graphic Design</span>
-            <span class="tag-pill" data-val="uiux">🖥️ UI/UX Design</span>
-            <span class="tag-pill" data-val="frontend">💻 Front-end Dev</span>
-            <span class="tag-pill" data-val="backend">⚙️ Back-end Dev</span>
-            <span class="tag-pill" data-val="fullstack">🔧 Full-stack Dev</span>
-            <span class="tag-pill" data-val="mobile">📱 Mobile Dev</span>
-            <span class="tag-pill" data-val="devops">☁️ DevOps / Cloud</span>
-            <span class="tag-pill" data-val="copywriting">✍️ Copywriting</span>
-            <span class="tag-pill" data-val="video">🎬 Video / Motion</span>
-            <span class="tag-pill" data-val="photo">📷 Photography</span>
-            <span class="tag-pill" data-val="social">📣 Social Media</span>
-            <span class="tag-pill" data-val="seo">🔍 SEO / Marketing</span>
-            <span class="tag-pill" data-val="pm">📋 Project Mgmt</span>
-            <span class="tag-pill" data-val="data">📊 Data / Analytics</span>
+            <span style="color:var(--text-muted);font-size:.875rem">Loading categories…</span>
           </div>
         </div>
 
@@ -425,11 +412,306 @@
   import { guardAuth } from "./auth.js";
   import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import {
-    doc, getDoc, setDoc, updateDoc, serverTimestamp
+    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const { user, userData } = await guardAuth(["freelancer"]);
   const uid = user.uid;
+
+  // Navbar
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"F";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0] || "Me";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  // ── Section nav ───────────────────────────────
+  document.querySelectorAll(".settings-nav-link[data-sec]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".settings-nav-link").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".settings-section").forEach(s=>s.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("sec-"+btn.dataset.sec).classList.add("active");
+    });
+  });
+
+  // ── State ─────────────────────────────────────
+  let selCategories = [], selProjTypes = [], selSkills = [];
+
+  // ── Skills free-text ──────────────────────────
+  const skillsInput = document.getElementById("skills-input");
+  const skillsOut   = document.getElementById("skills-output");
+  function addSkill(val) {
+    val = val.trim().toLowerCase();
+    if (!val || selSkills.includes(val)) return;
+    selSkills.push(val);
+    const p = document.createElement("span");
+    p.className="tag-pill selected"; p.textContent=val;
+    p.addEventListener("click",()=>{ selSkills.splice(selSkills.indexOf(val),1); p.remove(); updateProgress(); });
+    skillsOut.appendChild(p);
+    updateProgress();
+  }
+  skillsInput.addEventListener("keydown", e=>{
+    if(e.key==="Enter"||e.key===","){e.preventDefault();addSkill(skillsInput.value.replace(",",""));skillsInput.value="";}
+  });
+
+  // ── Project type picker ───────────────────────
+  function initStaticPicker(id, arr) {
+    document.querySelectorAll(`#${id} .tag-pill`).forEach(p => {
+      p.addEventListener("click", ()=>{
+        p.classList.toggle("selected");
+        const v = p.dataset.val;
+        p.classList.contains("selected") ? arr.push(v) : arr.splice(arr.indexOf(v),1);
+        updateProgress();
+      });
+    });
+  }
+  initStaticPicker("projtype-picker", selProjTypes);
+
+  // ── Language checkboxes ───────────────────────
+  document.querySelectorAll(".lang-item").forEach(item=>{
+    item.addEventListener("click", ()=>{
+      const cb = item.querySelector("input");
+      setTimeout(()=>{
+        item.classList.toggle("selected", cb.checked);
+        updateProgress();
+      },0);
+    });
+  });
+
+  function getSelectedLanguages() {
+    const checked = [...document.querySelectorAll(".lang-item input:checked")].map(i=>i.value);
+    const other   = document.getElementById("lang-other").value.trim();
+    const extras  = other ? other.split(",").map(s=>s.trim()).filter(Boolean) : [];
+    return [...checked, ...extras];
+  }
+
+  // ── Load categories from Firestore ────────────
+  // FIX: was hardcoded HTML; now loaded live so admin changes are reflected
+  async function loadCategories(savedCategoryIds) {
+    const snap = await getDocs(query(collection(db,"categories"), orderBy("name")));
+    const cats  = [];
+    snap.forEach(d => cats.push({id:d.id,...d.data()}));
+
+    const picker = document.getElementById("cat-picker");
+    if (!cats.length) {
+      picker.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem">No categories set up yet. Contact admin.</span>`;
+      return;
+    }
+
+    picker.innerHTML = cats.map(c =>
+      `<span class="tag-pill${savedCategoryIds.includes(c.id)?" selected":""}" data-val="${c.id}">${c.icon||"📁"} ${c.name}</span>`
+    ).join("");
+
+    // Pre-populate selCategories from saved data
+    selCategories = cats.filter(c=>savedCategoryIds.includes(c.id)).map(c=>c.id);
+
+    // Bind click events
+    picker.querySelectorAll(".tag-pill").forEach(p => {
+      p.addEventListener("click", ()=>{
+        p.classList.toggle("selected");
+        const v = p.dataset.val;
+        p.classList.contains("selected") ? selCategories.push(v) : selCategories.splice(selCategories.indexOf(v),1);
+        updateProgress();
+      });
+    });
+  }
+
+  // ── Load all data ─────────────────────────────
+  const snap = await getDoc(doc(db, "freelancers", uid));
+  const f    = snap.data() || {};
+
+  // Personal fields
+  document.getElementById("p-fullname").value = f.fullName || userData.displayName || "";
+  document.getElementById("p-phone").value    = f.phone || "";
+  document.getElementById("p-state").value    = f.state || "";
+  document.getElementById("p-bio").value      = f.bio || "";
+  document.getElementById("p-behance").value  = f.portfolioLinks?.behance || "";
+  document.getElementById("p-github").value   = f.portfolioLinks?.github  || "";
+  document.getElementById("p-website").value  = f.portfolioLinks?.website || "";
+
+  // Languages
+  const savedLangs = f.languages || [];
+  const knownLangs = ["Bahasa Malaysia","English","Mandarin","Tamil","Arabic","Japanese","Korean","French"];
+  const otherLangs = savedLangs.filter(l=>!knownLangs.includes(l));
+  document.querySelectorAll(".lang-item input").forEach(cb=>{
+    if(savedLangs.includes(cb.value)){ cb.checked=true; cb.closest(".lang-item").classList.add("selected"); }
+  });
+  if(otherLangs.length) document.getElementById("lang-other").value = otherLangs.join(", ");
+
+  // Skills
+  selSkills = []; skillsOut.innerHTML="";
+  (f.tags||[]).forEach(t=>addSkill(t));
+  document.getElementById("p-exp").value = f.experienceLevel || "";
+
+  // Project types
+  selProjTypes = [];
+  (f.preferredProjectType||[]).forEach(v=>{
+    const p = document.querySelector(`#projtype-picker [data-val="${v}"]`);
+    if(p){ p.classList.add("selected"); selProjTypes.push(v); }
+  });
+
+  // Rates
+  document.getElementById("r-type").value   = f.rateType || "per_project";
+  document.getElementById("r-min").value    = f.rateMin  || "";
+  document.getElementById("r-max").value    = f.rateMax  || "";
+  document.getElementById("r-minbud").value = f.minProjectBudget || "";
+
+  // Payment
+  document.getElementById("pay-bank").value    = f.bankName || "";
+  document.getElementById("pay-accname").value = f.bankAccountName || "";
+  document.getElementById("pay-duitnow").value = f.duitnowId || "";
+  document.getElementById("pay-ssm").value     = f.ssm || "";
+  try {
+    const privSnap = await getDoc(doc(db,"freelancers",uid,"private","bankDetails"));
+    if(privSnap.exists()) document.getElementById("pay-accnum").value = privSnap.data().bankAccountNumber || "";
+  } catch(e){}
+
+  // Account tab
+  document.getElementById("acc-email").value = user.email || "";
+  document.getElementById("acc-since").value = userData.createdAt?.toDate
+    ? userData.createdAt.toDate().toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"}) : "—";
+  document.getElementById("acc-status-box").innerHTML = userData.isApproved
+    ? `<span class="tag tag-green">✓ Approved — you can receive project invitations</span>`
+    : `<div class="alert alert-info">⏳ Your account is pending admin approval. You'll be notified by email once activated.</div>`;
+
+  // FIX: Load categories from Firestore THEN call updateProgress so saved selections show correctly
+  await loadCategories(f.categoryIds || []);
+
+  // ── Progress tracker ──────────────────────────
+  // FIX: defined after all data is loaded so done() checks see real values
+  const steps = [
+    { label:"Name & bio",    done:()=> !!(document.getElementById("p-fullname").value && document.getElementById("p-bio").value) },
+    { label:"Phone & state", done:()=> !!(document.getElementById("p-phone").value && document.getElementById("p-state").value) },
+    { label:"Languages",     done:()=> getSelectedLanguages().length > 0 },
+    { label:"Categories",    done:()=> selCategories.length > 0 },
+    { label:"Skills",        done:()=> selSkills.length > 0 },
+    { label:"Experience",    done:()=> !!document.getElementById("p-exp").value },
+    { label:"Rates",         done:()=> !!document.getElementById("r-min").value },
+    { label:"Bank details",  done:()=> !!(document.getElementById("pay-bank").value && document.getElementById("pay-accnum").value) },
+  ];
+
+  function updateProgress() {
+    const doneCount = steps.filter(s=>s.done()).length;
+    const pct = Math.round(doneCount/steps.length*100);
+    document.getElementById("prog-bar").style.width = pct+"%";
+    document.getElementById("prog-pct").textContent = pct+"% complete";
+    document.getElementById("prog-steps").innerHTML = steps.map(s=>
+      `<span class="prog-step ${s.done()?"done":""}">
+        ${s.done()?"✓":"○"} ${s.label}
+      </span>`
+    ).join("");
+    if(pct===100) document.getElementById("progress-banner").style.background="var(--success-light)";
+    else document.getElementById("progress-banner").style.background="";
+  }
+  // FIX: called once after ALL data (including categories) is loaded
+  updateProgress();
+
+  // ── Toast helper ──────────────────────────────
+  function toast(msg, type="success") {
+    const t = document.getElementById("save-toast");
+    t.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+    t.style.display="block";
+    t.scrollIntoView({behavior:"smooth"});
+    setTimeout(()=>t.style.display="none", 3500);
+  }
+
+  // ── Save personal ─────────────────────────────
+  document.getElementById("btn-save-personal").addEventListener("click", async()=>{
+    const btn=document.getElementById("btn-save-personal");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      await updateDoc(doc(db,"freelancers",uid),{
+        fullName:  document.getElementById("p-fullname").value.trim(),
+        phone:     document.getElementById("p-phone").value.trim(),
+        state:     document.getElementById("p-state").value,
+        bio:       document.getElementById("p-bio").value.trim(),
+        languages: getSelectedLanguages(),
+        portfolioLinks:{
+          behance:  document.getElementById("p-behance").value.trim(),
+          github:   document.getElementById("p-github").value.trim(),
+          website:  document.getElementById("p-website").value.trim()
+        },
+        updatedAt: serverTimestamp()
+      });
+      updateProgress();
+      toast("✓ Personal info saved.");
+    } catch(e){ toast("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save personal info";
+  });
+
+  // ── Save skills ───────────────────────────────
+  document.getElementById("btn-save-skills").addEventListener("click", async()=>{
+    const btn=document.getElementById("btn-save-skills");
+    if(!selCategories.length) return toast("Please select at least one category.","error");
+    if(!document.getElementById("p-exp").value) return toast("Please select your experience level.","error");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      await updateDoc(doc(db,"freelancers",uid),{
+        categoryIds:     selCategories,
+        tags:            selSkills,
+        experienceLevel: document.getElementById("p-exp").value,
+        updatedAt:       serverTimestamp()
+      });
+      updateProgress();
+      toast("✓ Skills saved.");
+    } catch(e){ toast("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save skills";
+  });
+
+  // ── Save rates ────────────────────────────────
+  document.getElementById("btn-save-rates").addEventListener("click", async()=>{
+    const btn=document.getElementById("btn-save-rates");
+    if(!document.getElementById("r-min").value) return toast("Please enter a minimum rate.","error");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      await updateDoc(doc(db,"freelancers",uid),{
+        rateType:           document.getElementById("r-type").value,
+        rateMin:            parseFloat(document.getElementById("r-min").value)||0,
+        rateMax:            parseFloat(document.getElementById("r-max").value)||0,
+        minProjectBudget:   parseFloat(document.getElementById("r-minbud").value)||0,
+        preferredProjectType: selProjTypes,
+        updatedAt:          serverTimestamp()
+      });
+      updateProgress();
+      toast("✓ Rates saved.");
+    } catch(e){ toast("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save rates";
+  });
+
+  // ── Save payment ──────────────────────────────
+  document.getElementById("btn-save-payment").addEventListener("click", async()=>{
+    const btn=document.getElementById("btn-save-payment");
+    const bank    = document.getElementById("pay-bank").value;
+    const accName = document.getElementById("pay-accname").value.trim();
+    const accNum  = document.getElementById("pay-accnum").value.trim();
+    if(!bank||!accName||!accNum) return toast("Please fill in all required bank details.","error");
+    btn.disabled=true; btn.textContent="Saving…";
+    try {
+      await updateDoc(doc(db,"freelancers",uid),{
+        bankName:        bank,
+        bankAccountName: accName,
+        duitnowId:       document.getElementById("pay-duitnow").value.trim(),
+        ssm:             document.getElementById("pay-ssm").value.trim(),
+        updatedAt:       serverTimestamp()
+      });
+      await setDoc(doc(db,"freelancers",uid,"private","bankDetails"),{
+        bankName:          bank,
+        bankAccountName:   accName,
+        bankAccountNumber: accNum,
+        duitnowId:         document.getElementById("pay-duitnow").value.trim(),
+        updatedAt:         serverTimestamp()
+      });
+      updateProgress();
+      toast("✓ Payment details saved.");
+    } catch(e){ toast("Error: "+e.message,"error"); }
+    btn.disabled=false; btn.textContent="Save payment details";
+  });
+
+  // ── Sign out all ──────────────────────────────
+  document.getElementById("btn-signout-all").addEventListener("click", async()=>{
+    await signOut(auth); window.location.href="index.html";
+  });
+</script>
 
   // Navbar
   const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"F";
