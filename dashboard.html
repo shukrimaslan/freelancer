@@ -800,17 +800,19 @@
 
     // ── Extension requests panel ──────────────────
     function renderExtensions() {
-      const extList = allInvitations.filter(i=>i.extensionRequested && i.status==="pending");
-      const tbody   = document.getElementById("ext-tbody");
+      // Only show pending extensions that have NOT been granted or denied yet
+      const extList = allInvitations.filter(i=>
+        i.extensionRequested && !i.extensionGranted && i.status==="pending"
+      );
+      const tbody = document.getElementById("ext-tbody");
       if(!extList.length){
-        tbody.innerHTML=`<tr><td colspan="6"><div class="empty">No extension requests.</div></td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="6"><div class="empty">No pending extension requests.</div></td></tr>`;
         return;
       }
       const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
       tbody.innerHTML = extList.map(inv=>{
         const fl = allFreelancers.find(f=>f.id===inv.freelancerId);
         const pr = allProjects.find(p=>p.id===inv.projectId);
-        const expiresAt = inv.expiresAt?.toDate ? inv.expiresAt.toDate() : null;
         return `<tr>
           <td><strong>${fl?.fullName||inv.freelancerId}</strong></td>
           <td>${pr?.title||inv.projectId}</td>
@@ -818,37 +820,46 @@
           <td style="font-size:.8rem">${fmt(inv.invitedAt)}</td>
           <td style="font-size:.8rem">${fmt(inv.expiresAt)}</td>
           <td style="display:flex;gap:.4rem">
-            <button class="btn btn-primary btn-sm" onclick="grantExtension('${inv.id}')">Grant +24h</button>
-            <button class="btn btn-ghost btn-sm"   onclick="denyExtension('${inv.id}')">Deny</button>
+            <button class="btn btn-primary btn-sm" id="grant-${inv.id}" onclick="grantExtension('${inv.id}')">Grant +24h</button>
+            <button class="btn btn-ghost btn-sm" onclick="denyExtension('${inv.id}')">Deny</button>
           </td>
         </tr>`;
       }).join("");
     }
 
     window.grantExtension = async (invId) => {
+      const btn = document.getElementById("grant-"+invId);
+      if(btn) { btn.disabled=true; btn.textContent="Granting…"; }
       try {
         const inv = allInvitations.find(i=>i.id===invId);
+        if(!inv || inv.extensionGranted) return; // guard: already granted
         const currentExpiry = inv?.expiresAt?.toDate ? inv.expiresAt.toDate() : new Date();
         const newExpiry = new Date(currentExpiry.getTime() + 24*3600*1000);
         await updateDoc(doc(db,"invitations",invId),{
-          extensionGranted:true,
+          extensionGranted: true,
+          extensionStatus:  "approved",
           expiresAt: Timestamp.fromDate(newExpiry),
           updatedAt: serverTimestamp()
         });
-        if(inv){ inv.extensionGranted=true; inv.expiresAt=Timestamp.fromDate(newExpiry); }
-        document.getElementById("ext-indicator").style.display="none";
+        inv.extensionGranted=true; inv.extensionStatus="approved";
+        inv.expiresAt=Timestamp.fromDate(newExpiry);
+        // Hide dot if no more pending extensions
+        const remaining = allInvitations.filter(i=>i.extensionRequested&&!i.extensionGranted&&i.status==="pending");
+        if(!remaining.length) document.getElementById("ext-indicator").style.display="none";
         renderExtensions();
-      } catch(e){ alert("Error: "+e.message); }
+      } catch(e){ alert("Error: "+e.message); if(btn){btn.disabled=false;btn.textContent="Grant +24h";} }
     };
 
     window.denyExtension = async (invId) => {
       if(!confirm("Deny this extension request? The freelancer's deadline stays unchanged.")) return;
       try {
         await updateDoc(doc(db,"invitations",invId),{
-          extensionRequested:false, updatedAt:serverTimestamp()
+          extensionRequested: false,
+          extensionStatus:    "denied",
+          updatedAt: serverTimestamp()
         });
         const inv=allInvitations.find(i=>i.id===invId);
-        if(inv) inv.extensionRequested=false;
+        if(inv){ inv.extensionRequested=false; inv.extensionStatus="denied"; }
         renderExtensions();
       } catch(e){ alert("Error: "+e.message); }
     };

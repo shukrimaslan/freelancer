@@ -416,7 +416,7 @@
   import { guardAuth } from "./auth.js";
   import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
   import {
-    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, serverTimestamp
+    doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const { user, userData } = await guardAuth(["freelancer"]);
@@ -490,26 +490,35 @@
   }
 
   // ── Load categories from Firestore ────────────
-  // FIX: was hardcoded HTML; now loaded live so admin changes are reflected
   async function loadCategories(savedCategoryIds) {
-    const snap = await getDocs(query(collection(db,"categories"), orderBy("name")));
-    const cats  = [];
-    snap.forEach(d => cats.push({id:d.id,...d.data()}));
+    let cats = [];
+    try {
+      // FIX: removed orderBy to avoid Firestore composite index requirement on older projects
+      const snap = await getDocs(collection(db,"categories"));
+      snap.forEach(d => cats.push({id:d.id,...d.data()}));
+      cats.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    } catch(e) {
+      console.error("loadCategories error:", e);
+    }
 
     const picker = document.getElementById("cat-picker");
     if (!cats.length) {
-      picker.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem">No categories set up yet. Contact admin.</span>`;
+      picker.innerHTML = `<span style="color:var(--text-muted);font-size:.875rem">No categories set up yet. Ask your admin to add categories first.</span>`;
       return;
     }
 
+    // FIX: older accounts stored slug strings ("design","uiux") not Firestore doc IDs.
+    // Build a slug→id map so we can match either format.
+    const slugToId = {};
+    cats.forEach(c => { if(c.slug) slugToId[c.slug] = c.id; });
+    const resolvedSaved = savedCategoryIds.map(id => slugToId[id] || id);
+
     picker.innerHTML = cats.map(c =>
-      `<span class="tag-pill${savedCategoryIds.includes(c.id)?" selected":""}" data-val="${c.id}">${c.icon||"📁"} ${c.name}</span>`
+      `<span class="tag-pill${resolvedSaved.includes(c.id)?" selected":""}" data-val="${c.id}">${c.icon||"📁"} ${c.name}</span>`
     ).join("");
 
-    // Pre-populate selCategories from saved data
-    selCategories = cats.filter(c=>savedCategoryIds.includes(c.id)).map(c=>c.id);
+    selCategories = cats.filter(c=>resolvedSaved.includes(c.id)).map(c=>c.id);
 
-    // Bind click events
     picker.querySelectorAll(".tag-pill").forEach(p => {
       p.addEventListener("click", ()=>{
         p.classList.toggle("selected");
@@ -521,8 +530,27 @@
   }
 
   // ── Load all data ─────────────────────────────
-  const snap = await getDoc(doc(db, "freelancers", uid));
-  const f    = snap.data() || {};
+  // FIX: older accounts may not have a freelancers doc — handle gracefully
+  let f = {};
+  try {
+    const snap = await getDoc(doc(db, "freelancers", uid));
+    if (snap.exists()) f = snap.data() || {};
+    else {
+      // Create a skeleton doc for older accounts that predate the freelancers collection
+      await setDoc(doc(db, "freelancers", uid), {
+        fullName: userData.displayName || "", phone:"", state:"", bio:"",
+        languages:[], categoryIds:[], tags:[], experienceLevel:"",
+        portfolioLinks:{behance:"",github:"",website:""},
+        availability:"available", preferredProjectType:[],
+        rateType:"per_project", rateMin:0, rateMax:0, minProjectBudget:0,
+        bankName:"", bankAccountName:"", duitnowId:"", ssm:"",
+        trustScore:0, totalProjectsCompleted:0, totalRatings:0,
+        isVerified:false, isApproved: userData.isApproved||false,
+        profileComplete:false, photoURL:"",
+        createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+      });
+    }
+  } catch(e) { console.error("freelancer doc load:", e); }
 
   // Personal fields
   document.getElementById("p-fullname").value = f.fullName || userData.displayName || "";
@@ -570,11 +598,14 @@
     if(privSnap.exists()) document.getElementById("pay-accnum").value = privSnap.data().bankAccountNumber || "";
   } catch(e){}
 
-  // Account tab
+  // FIX: older accounts may have null createdAt — fall back gracefully
   document.getElementById("acc-email").value = user.email || "";
   document.getElementById("acc-since").value = userData.createdAt?.toDate
-    ? userData.createdAt.toDate().toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"}) : "—";
-  document.getElementById("acc-status-box").innerHTML = userData.isApproved
+    ? userData.createdAt.toDate().toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"})
+    : user.metadata?.creationTime
+      ? new Date(user.metadata.creationTime).toLocaleDateString("en-MY",{year:"numeric",month:"long",day:"numeric"})
+      : "—";
+  document.getElementById("acc-status-box").innerHTML = (userData.isApproved || f.isApproved)
     ? `<span class="tag tag-green">✓ Approved — you can receive project invitations</span>`
     : `<div class="alert alert-info">⏳ Your account is pending admin approval. You'll be notified by email once activated.</div>`;
 

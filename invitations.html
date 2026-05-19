@@ -303,7 +303,12 @@
           </div>` : ""}
         ${inv.extensionRequested && inv.status==="pending" ? `
           <div class="alert alert-info" style="margin-top:.75rem;font-size:.825rem">
-            ⏳ Extension requested. Waiting for PM approval.
+            ${inv.extensionGranted
+              ? `✅ Extension approved — your deadline has been extended by 24 hours.`
+              : inv.extensionStatus==="denied"
+                ? `❌ Extension request was denied. Your original deadline still applies.`
+                : `⏳ Extension requested. Waiting for PM approval.`
+            }
           </div>` : ""}
       </div>
       ${isPending ? `
@@ -317,7 +322,7 @@
             </button>
           </div>
           <div>
-            ${!inv.extensionRequested ? `
+            ${!inv.extensionRequested && !inv.extensionGranted ? `
               <button class="btn btn-ghost btn-sm" onclick="openExtModal('${inv.id}')">
                 🕐 Need more time?
               </button>` : ""}

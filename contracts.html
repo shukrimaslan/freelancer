@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gengstr — Contract</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .contract-wrap { max-width:760px;margin:0 auto;padding:2rem 1.25rem 4rem; }
+
+    /* Contract document styling */
+    .contract-doc {
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius-lg);padding:2.5rem;margin-bottom:1.5rem;
+      font-size:.9rem;line-height:1.8;color:var(--text-primary);
+    }
+    .contract-doc h1 { font-size:1.3rem;text-align:center;margin-bottom:.25rem;font-weight:700; }
+    .contract-doc .contract-sub { text-align:center;color:var(--text-muted);font-size:.85rem;margin-bottom:2rem; }
+    .contract-section { margin-bottom:1.5rem; }
+    .contract-section h2 { font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid var(--border); }
+    .contract-parties { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem; }
+    @media(max-width:560px){ .contract-parties{grid-template-columns:1fr;} }
+    .party-box { background:var(--bg);border-radius:var(--radius);padding:1rem; }
+    .party-label { font-size:.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem; }
+    .party-name  { font-weight:600;font-size:.95rem; }
+    .contract-table { width:100%;border-collapse:collapse;margin:.5rem 0; }
+    .contract-table th,.contract-table td { padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border);font-size:.875rem; }
+    .contract-table th { background:var(--bg);font-weight:600;font-size:.8rem; }
+    .contract-clause { margin-bottom:.75rem;padding-left:1rem;border-left:2px solid var(--border); }
+    .clause-num { font-weight:600; }
+
+    /* Signature blocks */
+    .sig-grid { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem; }
+    @media(max-width:560px){ .sig-grid{grid-template-columns:1fr;} }
+    .sig-box {
+      border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;
+    }
+    .sig-box.signed { border-color:var(--success);background:var(--success-light); }
+    .sig-box.pending { border-color:var(--border);background:var(--bg); }
+    .sig-label { font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.75rem; }
+    .sig-name  { font-weight:600;font-size:.9rem;margin-bottom:.25rem; }
+    .sig-date  { font-size:.8rem;color:var(--text-muted); }
+    .sig-stamp { display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;
+      color:var(--success);font-weight:500;margin-top:.5rem; }
+
+    /* Sign CTA */
+    .sign-cta {
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:1.5rem;margin-bottom:1.5rem;
+    }
+    .sign-checkbox-wrap {
+      display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1rem;
+      padding:.85rem;background:var(--bg);border-radius:var(--radius);cursor:pointer;
+    }
+    .sign-checkbox-wrap input[type=checkbox] { accent-color:var(--brand);width:18px;height:18px;flex-shrink:0;margin-top:.1rem; }
+
+    /* Status badge bar */
+    .status-bar {
+      display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;
+    }
+    .status-step {
+      display:flex;align-items:center;gap:.3rem;font-size:.8rem;font-weight:500;
+      padding:.3rem .7rem;border-radius:99px;border:1px solid var(--border);color:var(--text-muted);
+    }
+    .status-step.done    { background:var(--success-light);border-color:var(--success);color:var(--success); }
+    .status-step.active  { background:var(--brand-light);border-color:var(--brand);color:var(--brand); }
+    .status-step .arrow  { color:var(--text-muted);margin:0 -.1rem; }
+
+    /* Builder form (PM only) */
+    .builder { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem; }
+    .builder-title { font-size:1rem;font-weight:600;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border); }
+    .builder-section { margin-bottom:1.25rem; }
+    .builder-section-title { font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <a class="navbar-brand" id="nav-brand" href="dashboard.html">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      gengstr
+    </a>
+    <div class="navbar-nav" id="nav-links"></div>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">?</div>
+      <span id="nav-name"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<div class="contract-wrap">
+  <div id="loading-state" style="text-align:center;padding:3rem"><div class="spinner"></div></div>
+  <div id="main" style="display:none"></div>
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import { guardAuth } from "./auth.js";
+  import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import {
+    doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, Timestamp
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  const { user, userData } = await guardAuth(["freelancer","pm","admin"]);
+  const uid  = user.uid;
+  const role = userData.role;
+
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0]||"";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  if(role==="freelancer"){
+    document.getElementById("nav-links").innerHTML=`<a href="profile.html" class="nav-link">My Profile</a><a href="invitations.html" class="nav-link">Invitations</a>`;
+    document.getElementById("nav-brand").href="profile.html";
+  } else {
+    document.getElementById("nav-links").innerHTML=`<a href="dashboard.html" class="nav-link">Dashboard</a><a href="projects.html" class="nav-link">Projects</a>`;
+  }
+
+  const params     = new URLSearchParams(window.location.search);
+  const contractId = params.get("id");
+  const projectId  = params.get("project"); // new contract mode
+
+  const main = document.getElementById("main");
+
+  // ── Helper: get client IP (best effort) ───────
+  async function getIP(){
+    try { const r=await fetch("https://api.ipify.org?format=json"); const d=await r.json(); return d.ip||"unknown"; }
+    catch(){ return "unknown"; }
+  }
+
+  // ── VIEW EXISTING CONTRACT ────────────────────
+  if(contractId){
+    const cSnap = await getDoc(doc(db,"contracts",contractId));
+    if(!cSnap.exists()){ main.innerHTML=`<div class="alert alert-error">Contract not found.</div>`; document.getElementById("loading-state").style.display="none"; main.style.display="block"; return; }
+
+    let contract = {id:cSnap.id,...cSnap.data()};
+
+    // Access check
+    if(role==="freelancer" && contract.freelancerId!==uid){
+      main.innerHTML=`<div class="alert alert-error">Access denied.</div>`; document.getElementById("loading-state").style.display="none"; main.style.display="block"; return;
+    }
+
+    // Load project + freelancer names
+    let project={}, flProfile={};
+    try {
+      const ps = await getDoc(doc(db,"projects",contract.projectId));
+      if(ps.exists()) project={id:ps.id,...ps.data()};
+    }catch(e){}
+    if(contract.freelancerId){
+      try {
+        const fs = await getDoc(doc(db,"freelancers",contract.freelancerId));
+        if(fs.exists()) flProfile={id:fs.id,...fs.data()};
+      }catch(e){}
+    }
+
+    document.getElementById("loading-state").style.display="none";
+    main.style.display="block";
+
+    function renderContract(){
+      const pmSigned  = !!contract.pmSignedAt;
+      const flSigned  = !!contract.freelancerSignedAt;
+      const bothSigned= pmSigned && flSigned;
+      const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"long",year:"numeric"}) : "—";
+      const fmtFull = ts => ts?.toDate ? ts.toDate().toLocaleString("en-MY",{dateStyle:"full",timeStyle:"short"}) : "—";
+      const canSign = (role==="freelancer" && !flSigned) || (role!=="freelancer" && !pmSigned);
+
+      const statusSteps = [
+        {key:"draft",    label:"Draft"},
+        {key:"sent",     label:"Sent"},
+        {key:"signed",   label:"Signed"},
+        {key:"active",   label:"Active"},
+        {key:"completed",label:"Completed"},
+      ];
+      const statusOrder = statusSteps.map(s=>s.key);
+      const curIdx = statusOrder.indexOf(contract.status);
+
+      main.innerHTML = `
+        <!-- Back link -->
+        <div style="margin-bottom:1rem;font-size:.875rem">
+          <a href="project-detail.html?id=${contract.projectId}" style="color:var(--text-muted);text-decoration:none">← Back to project</a>
+        </div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+          ${statusSteps.map((s,i)=>`
+            <span class="status-step ${i<curIdx?"done":i===curIdx?"active":""}">
+              ${i<curIdx?"✓ ":""}${s.label}
+            </span>
+            ${i<statusSteps.length-1?`<span class="arrow">→</span>`:""}
+          `).join("")}
+        </div>
+
+        <!-- Sign CTA (shown if current user hasn't signed) -->
+        ${canSign ? `
+        <div class="sign-cta" id="sign-cta">
+          <h2 style="font-size:1rem;margin-bottom:.5rem">
+            ${role==="freelancer" ? "Your signature is required" : "Sign as Project Manager"}
+          </h2>
+          <p style="font-size:.875rem;color:var(--text-secondary);margin-bottom:1rem">
+            Please read the full contract above before signing. By signing, you confirm that you have read, understood, and agree to all terms set out in this agreement.
+          </p>
+          <label class="sign-checkbox-wrap" id="sign-label">
+            <input type="checkbox" id="sign-agree">
+            <span style="font-size:.875rem">I, <strong>${userData.displayName||"(your name)"}</strong>, confirm that I have read and agree to the terms of this contract. I understand this constitutes a binding agreement between both parties.</span>
+          </label>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" id="btn-sign" disabled>Sign contract</button>
+            <span style="font-size:.78rem;color:var(--text-muted)">Your name, timestamp, and IP address will be recorded as your signature.</span>
+          </div>
+          <div id="sign-alert" style="display:none;margin-top:.75rem"></div>
+        </div>` : ""}
+
+        <!-- Contract document -->
+        <div class="contract-doc" id="contract-doc">
+          <h1>Service Agreement</h1>
+          <div class="contract-sub">Contract ref: <strong>${contractId.slice(0,8).toUpperCase()}</strong> &nbsp;|&nbsp; Generated by gengstr</div>
+
+          <div class="contract-parties">
+            <div class="party-box">
+              <div class="party-label">Service Provider (Freelancer)</div>
+              <div class="party-name">${flProfile.fullName||contract.freelancerId}</div>
+              <div style="font-size:.825rem;color:var(--text-muted);margin-top:.25rem">${contract.freelancerId}</div>
+              ${flProfile.ssm?`<div style="font-size:.8rem;color:var(--text-muted)">SSM: ${flProfile.ssm}</div>`:""}
+            </div>
+            <div class="party-box">
+              <div class="party-label">Client / Project Manager</div>
+              <div class="party-name">${project.clientName||"(Client)"}</div>
+              <div style="font-size:.825rem;color:var(--text-muted);margin-top:.25rem">Managed by: ${userData.displayName||contract.pmId}</div>
+            </div>
+          </div>
+
+          <div class="contract-section">
+            <h2>1. Project details</h2>
+            <table class="contract-table">
+              <tr><th>Field</th><th>Details</th></tr>
+              <tr><td>Project title</td><td><strong>${project.title||contract.projectId}</strong></td></tr>
+              <tr><td>Client</td><td>${project.clientName||"—"}</td></tr>
+              <tr><td>Start date</td><td>${fmt(contract.startDate)}</td></tr>
+              <tr><td>End date</td><td>${fmt(contract.endDate)}</td></tr>
+              <tr><td>Contract date</td><td>${fmt(contract.createdAt)}</td></tr>
+            </table>
+          </div>
+
+          <div class="contract-section">
+            <h2>2. Scope of work</h2>
+            <p>${contract.scopeOfWork||"As discussed and agreed between both parties."}</p>
+          </div>
+
+          ${(contract.deliverables||[]).length ? `
+          <div class="contract-section">
+            <h2>3. Deliverables</h2>
+            <ul style="padding-left:1.25rem;line-height:2">
+              ${(contract.deliverables||[]).map(d=>`<li>${d}</li>`).join("")}
+            </ul>
+          </div>` : ""}
+
+          <div class="contract-section">
+            <h2>${(contract.deliverables||[]).length ? "4" : "3"}. Payment terms</h2>
+            <table class="contract-table">
+              <tr><th>Field</th><th>Details</th></tr>
+              <tr><td>Agreed amount</td><td><strong>RM ${(contract.agreedRate||0).toLocaleString()}</strong></td></tr>
+              <tr><td>Rate type</td><td>${contract.rateType==="hourly"?"Hourly rate":"Fixed project price"}</td></tr>
+              <tr><td>Payment terms</td><td>${contract.paymentTerms||"As agreed between both parties"}</td></tr>
+              <tr><td>Payment method</td><td>Bank transfer (manual) — MYR</td></tr>
+            </table>
+          </div>
+
+          <div class="contract-section">
+            <h2>${(contract.deliverables||[]).length ? "5" : "4"}. Terms & conditions</h2>
+            ${[
+              ["Confidentiality","Both parties agree to keep all project information, client details, and proprietary data confidential and not to disclose any information to third parties without prior written consent."],
+              ["Intellectual property","Upon receipt of full payment, all intellectual property rights for deliverables created under this contract shall transfer to the client. The freelancer retains the right to include the work in their portfolio unless otherwise agreed in writing."],
+              ["Revisions","Any revision requests beyond the agreed scope may incur additional charges. Revision requests must be submitted within 7 days of delivery."],
+              ["Cancellation","Either party may terminate this agreement with 7 days written notice. Work completed up to the termination date will be invoiced accordingly."],
+              ["Dispute resolution","Any disputes arising from this agreement shall first be addressed through good-faith negotiation. If unresolved, the dispute shall be referred to mediation in Malaysia under the Mediation Act 2012."],
+              ["Governing law","This agreement shall be governed by and construed in accordance with the laws of Malaysia."],
+            ].map((t,i)=>`
+              <div class="contract-clause">
+                <div class="clause-num">${i+1}. ${t[0]}</div>
+                <div style="color:var(--text-secondary);margin-top:.25rem;font-size:.875rem">${t[1]}</div>
+              </div>`).join("")}
+          </div>
+
+          <!-- Signatures -->
+          <div class="contract-section">
+            <h2>Signatures</h2>
+            <div class="sig-grid">
+              <div class="sig-box ${pmSigned?"signed":"pending"}">
+                <div class="sig-label">Project Manager / Client</div>
+                ${pmSigned ? `
+                  <div class="sig-name">${contract.pmSignedName||"Signed"}</div>
+                  <div class="sig-date">${fmtFull(contract.pmSignedAt)}</div>
+                  <div class="sig-date" style="margin-top:.15rem;font-size:.75rem">IP: ${contract.pmSignedIP||"—"}</div>
+                  <div class="sig-stamp">✓ Electronically signed</div>
+                ` : `
+                  <div style="font-size:.875rem;color:var(--text-muted);margin-top:.5rem;font-style:italic">Awaiting signature…</div>
+                  <div style="height:40px;border-bottom:1px dashed var(--border);margin-top:1rem"></div>
+                `}
+              </div>
+              <div class="sig-box ${flSigned?"signed":"pending"}">
+                <div class="sig-label">Service Provider (Freelancer)</div>
+                ${flSigned ? `
+                  <div class="sig-name">${contract.freelancerSignedName||"Signed"}</div>
+                  <div class="sig-date">${fmtFull(contract.freelancerSignedAt)}</div>
+                  <div class="sig-date" style="margin-top:.15rem;font-size:.75rem">IP: ${contract.freelancerSignedIP||"—"}</div>
+                  <div class="sig-stamp">✓ Electronically signed</div>
+                ` : `
+                  <div style="font-size:.875rem;color:var(--text-muted);margin-top:.5rem;font-style:italic">Awaiting signature…</div>
+                  <div style="height:40px;border-bottom:1px dashed var(--border);margin-top:1rem"></div>
+                `}
+              </div>
+            </div>
+            ${bothSigned ? `
+              <div class="alert alert-success" style="margin-top:1rem">
+                ✓ This contract has been signed by both parties and is legally binding.
+              </div>` : ""}
+          </div>
+
+          <div style="text-align:center;margin-top:2rem;font-size:.75rem;color:var(--text-muted)">
+            This electronic agreement was generated by gengstr. Contract ID: ${contractId}<br>
+            Electronic signatures are recorded with timestamp and IP address for verification purposes.
+          </div>
+        </div>
+
+        <!-- Download button -->
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="printContract()">🖨️ Print / Save as PDF</button>
+          ${role!=="freelancer" && !bothSigned ? `<a href="contracts.html?project=${contract.projectId}" class="btn btn-ghost">Edit contract</a>` : ""}
+          <a href="project-detail.html?id=${contract.projectId}" class="btn btn-ghost">← Back to project</a>
+        </div>`;
+
+      // Sign button logic
+      if(canSign){
+        const cb  = document.getElementById("sign-agree");
+        const btn = document.getElementById("btn-sign");
+        cb.addEventListener("change", ()=>{ btn.disabled=!cb.checked; });
+        btn.addEventListener("click", async()=>{
+          btn.disabled=true; btn.textContent="Signing…";
+          const alertEl = document.getElementById("sign-alert");
+          try {
+            const ip   = await getIP();
+            const now  = serverTimestamp();
+            const updates = {};
+            if(role==="freelancer"){
+              updates.freelancerSignedAt   = now;
+              updates.freelancerSignedIP   = ip;
+              updates.freelancerSignedName = userData.displayName||"Freelancer";
+            } else {
+              updates.pmSignedAt   = now;
+              updates.pmSignedIP   = ip;
+              updates.pmSignedName = userData.displayName||"PM";
+            }
+            // Update status
+            const newPmSigned = role!=="freelancer" ? true : pmSigned;
+            const newFlSigned = role==="freelancer" ? true : flSigned;
+            updates.status = newPmSigned && newFlSigned ? "signed" : "sent";
+            await updateDoc(doc(db,"contracts",contractId), updates);
+            Object.assign(contract, updates, {
+              pmSignedAt: role!=="freelancer" ? {toDate:()=>new Date()} : contract.pmSignedAt,
+              freelancerSignedAt: role==="freelancer" ? {toDate:()=>new Date()} : contract.freelancerSignedAt,
+            });
+            renderContract();
+          } catch(e){
+            alertEl.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;
+            alertEl.style.display="block";
+            btn.disabled=false; btn.textContent="Sign contract";
+          }
+        });
+      }
+    }
+
+    renderContract();
+
+    window.printContract = () => {
+      window.print();
+    };
+
+  // ── CREATE NEW CONTRACT (PM/Admin only) ───────
+  } else if(projectId) {
+    if(role==="freelancer"){ window.location.href="profile.html"; return; }
+
+    // Load project details to pre-fill form
+    let project={}, flProfile={};
+    try {
+      const ps = await getDoc(doc(db,"projects",projectId));
+      if(ps.exists()) project={id:ps.id,...ps.data()};
+    }catch(e){}
+    if(project.confirmedFreelancerId){
+      try {
+        const fs = await getDoc(doc(db,"freelancers",project.confirmedFreelancerId));
+        if(fs.exists()) flProfile={id:fs.id,...fs.data()};
+      }catch(e){}
+    }
+
+    document.getElementById("loading-state").style.display="none";
+    main.style.display="block";
+
+    const today = new Date().toISOString().split("T")[0];
+    const endDate = project.endDate?.toDate ? project.endDate.toDate().toISOString().split("T")[0] : "";
+
+    main.innerHTML = `
+      <div style="margin-bottom:1rem;font-size:.875rem">
+        <a href="project-detail.html?id=${projectId}" style="color:var(--text-muted);text-decoration:none">← Back to project</a>
+      </div>
+      <h1 style="font-size:1.3rem;margin-bottom:.35rem">Create contract</h1>
+      <p style="margin-bottom:1.5rem">For: <strong>${project.title||projectId}</strong></p>
+
+      <div id="form-alert" style="display:none;margin-bottom:1rem"></div>
+
+      <div class="builder">
+        <div class="builder-title">Contract details</div>
+
+        <div class="builder-section">
+          <div class="builder-section-title">Parties</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Freelancer</label>
+              <input type="text" id="c-fl-name" value="${flProfile.fullName||""}" placeholder="Freelancer full name" readonly style="background:var(--bg)">
+            </div>
+            <div class="form-group">
+              <label>Client name</label>
+              <input type="text" id="c-client" value="${project.clientName||""}" placeholder="Client / company name">
+            </div>
+          </div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-title">Scope & deliverables</div>
+          <div class="form-group">
+            <label for="c-scope">Scope of work <span class="req">*</span></label>
+            <textarea id="c-scope" rows="4" placeholder="Describe in detail what the freelancer will deliver…">${project.description||""}</textarea>
+          </div>
+          <div class="form-group">
+            <label for="c-deliverables">Deliverables (one per line)</label>
+            <textarea id="c-deliverables" rows="3" placeholder="Final design files&#10;Source files&#10;Handoff documentation">${(project.deliverables||[]).join("\n")}</textarea>
+          </div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-title">Timeline</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="c-start">Start date <span class="req">*</span></label>
+              <input type="date" id="c-start" value="${today}">
+            </div>
+            <div class="form-group">
+              <label for="c-end">End date <span class="req">*</span></label>
+              <input type="date" id="c-end" value="${endDate}">
+            </div>
+          </div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-title">Payment</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="c-rate">Agreed amount (RM) <span class="req">*</span></label>
+              <input type="number" id="c-rate" placeholder="e.g. 3000" value="${project.budgetAmount||""}">
+            </div>
+            <div class="form-group">
+              <label for="c-rate-type">Rate type</label>
+              <select id="c-rate-type">
+                <option value="fixed">Fixed price</option>
+                <option value="hourly">Hourly rate</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="c-payment-terms">Payment terms</label>
+            <select id="c-payment-terms">
+              <option value="Full payment upon completion">Full payment upon completion</option>
+              <option value="50% upfront, 50% on delivery">50% upfront, 50% on delivery</option>
+              <option value="30% upfront, 70% on delivery">30% upfront, 70% on delivery</option>
+              <option value="Monthly retainer">Monthly retainer</option>
+              <option value="Milestone-based payments">Milestone-based payments</option>
+              <option value="Custom">Custom (specify in scope)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.75rem;justify-content:flex-end;flex-wrap:wrap">
+          <a href="project-detail.html?id=${projectId}" class="btn btn-ghost">Cancel</a>
+          <button class="btn btn-primary" id="btn-create-contract">Generate contract →</button>
+        </div>
+      </div>`;
+
+    document.getElementById("btn-create-contract").addEventListener("click", async()=>{
+      const btn = document.getElementById("btn-create-contract");
+      const alertEl = document.getElementById("form-alert");
+      const scope = document.getElementById("c-scope").value.trim();
+      const rate  = parseFloat(document.getElementById("c-rate").value)||0;
+      const start = document.getElementById("c-start").value;
+      const end   = document.getElementById("c-end").value;
+
+      if(!scope)  return showFormAlert("Please enter the scope of work.");
+      if(!rate)   return showFormAlert("Please enter the agreed amount.");
+      if(!start)  return showFormAlert("Please select a start date.");
+      if(!end)    return showFormAlert("Please select an end date.");
+      if(!project.confirmedFreelancerId) return showFormAlert("No confirmed freelancer on this project yet.");
+
+      btn.disabled=true; btn.textContent="Creating…";
+      try {
+        const deliverables = document.getElementById("c-deliverables").value
+          .split("\n").map(s=>s.trim()).filter(Boolean);
+
+        const ref = await addDoc(collection(db,"contracts"),{
+          projectId,
+          freelancerId:  project.confirmedFreelancerId,
+          pmId:          uid,
+          scopeOfWork:   scope,
+          deliverables,
+          agreedRate:    rate,
+          rateType:      document.getElementById("c-rate-type").value,
+          paymentTerms:  document.getElementById("c-payment-terms").value,
+          currency:      "MYR",
+          startDate:     Timestamp.fromDate(new Date(start)),
+          endDate:       Timestamp.fromDate(new Date(end)),
+          status:        "sent",
+          pmSignedAt:    null, pmSignedIP:null, pmSignedName:null,
+          freelancerSignedAt:null, freelancerSignedIP:null, freelancerSignedName:null,
+          templateVersion:"v1.0",
+          createdAt:     serverTimestamp(),
+          updatedAt:     serverTimestamp()
+        });
+        // Update project with contract reference
+        await updateDoc(doc(db,"projects",projectId),{
+          contractId: ref.id,
+          updatedAt:  serverTimestamp()
+        });
+        window.location.href = `contracts.html?id=${ref.id}`;
+      } catch(e){
+        showFormAlert("Error: "+e.message);
+        btn.disabled=false; btn.textContent="Generate contract →";
+      }
+    });
+
+    function showFormAlert(msg){
+      const el = document.getElementById("form-alert");
+      el.innerHTML=`<div class="alert alert-error">${msg}</div>`;
+      el.style.display="block";
+    }
+
+  } else {
+    document.getElementById("loading-state").innerHTML=`<p style="color:var(--danger)">No contract or project specified.</p>`;
+  }
+</script>
+
+<style media="print">
+  .navbar, .sign-cta, .btn, .status-bar, a[href] { display:none!important; }
+  .contract-doc { border:none!important;padding:0!important;box-shadow:none!important; }
+  body { background:white!important; }
+  .contract-wrap { padding:0!important; }
+</style>
+</body>
+</html>

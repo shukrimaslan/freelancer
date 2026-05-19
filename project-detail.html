@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gengstr — Project Details</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .proj-header {
+      background:var(--surface);border-bottom:1px solid var(--border);
+      padding:1.25rem 0;margin-bottom:1.75rem;
+    }
+    .proj-header-inner {
+      max-width:1000px;margin:0 auto;padding:0 1.25rem;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+    }
+    .proj-layout {
+      max-width:1000px;margin:0 auto;padding:0 1.25rem 3rem;
+      display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;
+    }
+    @media(max-width:720px){ .proj-layout{grid-template-columns:1fr;} }
+
+    .panel { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem; }
+    .panel-title { font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border); }
+
+    /* Status pills */
+    .status-pill {
+      display:inline-flex;align-items:center;gap:.4rem;
+      padding:.3rem .85rem;border-radius:99px;font-size:.8rem;font-weight:500;
+    }
+    .sp-active      {background:#ede9fe;color:#6d28d9;}
+    .sp-on_hold     {background:var(--warning-light);color:var(--warning);}
+    .sp-completed   {background:var(--success-light);color:var(--success);}
+    .sp-cancelled   {background:var(--danger-light);color:var(--danger);}
+    .sp-in_progress {background:var(--brand-light);color:var(--brand);}
+    .sp-submitted   {background:#dbeafe;color:#1d4ed8;}
+    .sp-revising    {background:#fef3c7;color:#92400e;}
+    .sp-approved    {background:var(--success-light);color:var(--success);}
+    .sp-review      {background:#ede9fe;color:#6d28d9;}
+    .sp-paid        {background:var(--success-light);color:var(--success);}
+    .sp-unpaid      {background:var(--danger-light);color:var(--danger);}
+    .sp-partial     {background:var(--warning-light);color:var(--warning);}
+    .sp-default     {background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);}
+
+    /* Timeline */
+    .timeline { border-left:2px solid var(--border);margin-left:.75rem;padding-left:1.25rem; }
+    .timeline-item { position:relative;padding-bottom:1.1rem; }
+    .timeline-item::before {
+      content:'';position:absolute;left:-1.45rem;top:.35rem;
+      width:10px;height:10px;border-radius:50%;background:var(--brand);border:2px solid var(--surface);
+    }
+    .timeline-item.muted::before { background:var(--border); }
+    .timeline-item:last-child { padding-bottom:0; }
+    .tl-time { font-size:.72rem;color:var(--text-muted); }
+    .tl-text { font-size:.875rem;color:var(--text-primary);margin-top:.1rem; }
+    .tl-sub  { font-size:.78rem;color:var(--text-muted);margin-top:.1rem; }
+
+    /* Status update select */
+    .status-group { margin-bottom:.85rem; }
+    .status-group label { font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.35rem; }
+    .status-select { width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:var(--radius);font-size:.875rem;font-family:var(--font);background:var(--surface);color:var(--text-primary); }
+    .status-select:focus { outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(124,111,255,.12); }
+
+    /* Contract banner */
+    .contract-banner {
+      background:var(--brand-light);border:1px solid var(--brand);
+      border-radius:var(--radius-lg);padding:1rem 1.25rem;
+      display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+      margin-bottom:1.25rem;
+    }
+
+    /* Detail rows */
+    .drow { display:flex;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.875rem; }
+    .drow:last-child { border-bottom:none; }
+    .dl { width:130px;min-width:130px;color:var(--text-muted);font-weight:500;font-size:.8rem; }
+
+    /* Deliverable checklist */
+    .deliv-item {
+      display:flex;align-items:center;gap:.6rem;padding:.4rem 0;
+      border-bottom:1px solid var(--border);font-size:.875rem;
+    }
+    .deliv-item:last-child { border-bottom:none; }
+    .deliv-check { width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border);
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;
+      transition:all .15s; }
+    .deliv-check.checked { background:var(--brand);border-color:var(--brand); }
+    .deliv-check.checked::after { content:'✓';color:white;font-size:.7rem;font-weight:700; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <a class="navbar-brand" id="nav-brand" href="dashboard.html">
+      <div class="logo-dot">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      gengstr
+    </a>
+    <div class="navbar-nav" id="nav-links"></div>
+    <div class="nav-user">
+      <div class="avatar" id="nav-avatar">?</div>
+      <span id="nav-name"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Sign out</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Loading state -->
+<div id="loading-state" style="text-align:center;padding:4rem">
+  <div class="spinner"></div>
+  <p style="margin-top:1rem;color:var(--text-muted)">Loading project…</p>
+</div>
+
+<!-- Project header -->
+<div class="proj-header" id="proj-header" style="display:none">
+  <div class="proj-header-inner">
+    <div>
+      <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.35rem">
+        <a id="back-link" href="#" style="color:var(--text-muted);text-decoration:none">← Back</a>
+      </div>
+      <h1 id="proj-title" style="font-size:1.3rem;margin-bottom:.3rem"></h1>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <span id="proj-client" style="font-size:.875rem;color:var(--text-muted)"></span>
+        <span id="proj-status-badge"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="header-actions"></div>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div class="proj-layout" id="proj-layout" style="display:none">
+
+  <!-- Left column -->
+  <div>
+    <!-- Contract banner (shown when contract exists) -->
+    <div id="contract-banner" style="display:none" class="contract-banner">
+      <div>
+        <div style="font-weight:600;font-size:.9rem">📄 Project contract</div>
+        <div style="font-size:.8rem;color:var(--brand-dark)" id="contract-banner-status"></div>
+      </div>
+      <a href="#" id="contract-link" class="btn btn-primary btn-sm">View contract →</a>
+    </div>
+
+    <!-- Status panel (role-specific) -->
+    <div class="panel" id="status-update-panel">
+      <div class="panel-title">Update status</div>
+      <div id="status-controls"></div>
+      <button class="btn btn-primary" id="btn-update-status">Save status</button>
+      <div id="status-alert" style="display:none;margin-top:.75rem"></div>
+    </div>
+
+    <!-- Project description -->
+    <div class="panel">
+      <div class="panel-title">Project brief</div>
+      <p id="proj-desc" style="font-size:.875rem;line-height:1.75;color:var(--text-primary)"></p>
+      <div id="proj-deliverables" style="margin-top:1rem"></div>
+    </div>
+
+    <!-- Activity timeline -->
+    <div class="panel">
+      <div class="panel-title">Activity log</div>
+      <div class="timeline" id="activity-log">
+        <div style="color:var(--text-muted);font-size:.875rem">No activity yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div>
+    <!-- Project meta -->
+    <div class="panel">
+      <div class="panel-title">Project details</div>
+      <div id="proj-meta-rows"></div>
+    </div>
+
+    <!-- Current statuses -->
+    <div class="panel">
+      <div class="panel-title">Current statuses</div>
+      <div id="current-statuses"></div>
+    </div>
+
+    <!-- Team -->
+    <div class="panel">
+      <div class="panel-title">Team</div>
+      <div id="proj-team"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { auth, db } from "./firebase.js";
+  import { guardAuth } from "./auth.js";
+  import { signOut } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+  import {
+    doc, getDoc, updateDoc, collection, getDocs,
+    addDoc, serverTimestamp, Timestamp, arrayUnion
+  } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  // ── Auth — works for both freelancer and PM/admin ─
+  const { user, userData } = await guardAuth(["freelancer","pm","admin"]);
+  const uid  = user.uid;
+  const role = userData.role; // "freelancer" | "pm" | "admin"
+
+  // Navbar links
+  const initials = userData.displayName?.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()||"?";
+  document.getElementById("nav-avatar").textContent = initials;
+  document.getElementById("nav-name").textContent   = userData.displayName?.split(" ")[0]||"";
+  document.getElementById("btn-logout").addEventListener("click", async()=>{ await signOut(auth); window.location.href="index.html"; });
+
+  if(role==="freelancer"){
+    document.getElementById("nav-links").innerHTML = `
+      <a href="profile.html"     class="nav-link">My Profile</a>
+      <a href="invitations.html" class="nav-link">Invitations</a>
+      <a href="settings.html"    class="nav-link">Settings</a>`;
+    document.getElementById("nav-brand").href="profile.html";
+    document.getElementById("back-link").href="invitations.html";
+    document.getElementById("back-link").textContent="← My Invitations";
+  } else {
+    document.getElementById("nav-links").innerHTML = `
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="projects.html"  class="nav-link active">Projects</a>`;
+    document.getElementById("back-link").href="projects.html";
+    document.getElementById("back-link").textContent="← All Projects";
+  }
+
+  // ── Get project ID from URL ───────────────────
+  const params    = new URLSearchParams(window.location.search);
+  const projectId = params.get("id");
+  if(!projectId){ document.getElementById("loading-state").innerHTML=`<p style="color:var(--danger)">No project specified.</p>`; throw new Error("No project ID"); }
+
+  // ── Load data ─────────────────────────────────
+  let project={}, freelancerProfile={}, catMap={}, contract=null;
+
+  const [projSnap, cSnap] = await Promise.all([
+    getDoc(doc(db,"projects",projectId)),
+    getDocs(collection(db,"categories"))
+  ]);
+
+  if(!projSnap.exists()){ document.getElementById("loading-state").innerHTML=`<p style="color:var(--danger)">Project not found.</p>`; throw new Error("No project"); }
+  project = {id:projSnap.id,...projSnap.data()};
+  cSnap.forEach(d=>{ catMap[d.id]={name:d.data().name,icon:d.data().icon||"📁"}; });
+
+  // Access check: freelancer must be the confirmed one OR be invited
+  if(role==="freelancer" && project.confirmedFreelancerId !== uid){
+    document.getElementById("loading-state").innerHTML=`<p style="color:var(--danger)">You don't have access to this project.</p>`; throw new Error("Access denied");
+  }
+
+  // Load freelancer profile if confirmed
+  if(project.confirmedFreelancerId){
+    try {
+      const fs = await getDoc(doc(db,"freelancers",project.confirmedFreelancerId));
+      if(fs.exists()) freelancerProfile = {id:fs.id,...fs.data()};
+    } catch(e){}
+  }
+
+  // Load contract
+  try {
+    const contrSnap = await getDocs(collection(db,"contracts"));
+    contrSnap.forEach(d=>{ if(d.data().projectId===projectId) contract={id:d.id,...d.data()}; });
+  } catch(e){}
+
+  // ── Render ────────────────────────────────────
+  document.getElementById("loading-state").style.display = "none";
+  document.getElementById("proj-header").style.display   = "block";
+  document.getElementById("proj-layout").style.display   = "grid";
+
+  const fmt = ts => ts?.toDate ? ts.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"}) : "—";
+  const fmtFull = ts => ts?.toDate ? ts.toDate().toLocaleString("en-MY",{dateStyle:"medium",timeStyle:"short"}) : "—";
+
+  function statusPillClass(val){
+    const map = {
+      active:"sp-active", on_hold:"sp-on_hold", completed:"sp-completed", cancelled:"sp-cancelled",
+      in_progress:"sp-in_progress", submitted:"sp-submitted", revising:"sp-revising", approved:"sp-approved",
+      under_review:"sp-review", client_review:"sp-review", qa_review:"sp-review",
+      paid:"sp-paid", unpaid:"sp-unpaid", partially_paid:"sp-partial"
+    };
+    return map[val]||"sp-default";
+  }
+
+  function pill(val, label){
+    return `<span class="status-pill ${statusPillClass(val)}">${label||val}</span>`;
+  }
+
+  // Header
+  document.getElementById("proj-title").textContent = project.title||"Untitled project";
+  document.getElementById("proj-client").textContent = project.clientName ? `Client: ${project.clientName}` : "";
+  document.getElementById("proj-status-badge").innerHTML = pill(project.projectStatus||project.status||"active",
+    (project.projectStatus||project.status||"Active").replace(/_/g," "));
+
+  // Description
+  document.getElementById("proj-desc").textContent = project.description||"No description provided.";
+
+  // Deliverables checklist
+  const delivs = project.deliverables||[];
+  const checkedDelivs = project.checkedDeliverables||[];
+  if(delivs.length){
+    document.getElementById("proj-deliverables").innerHTML = `
+      <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">Deliverables</div>
+      ${delivs.map((d,i)=>{
+        const isChecked = checkedDelivs.includes(i);
+        return `<div class="deliv-item">
+          <div class="deliv-check ${isChecked?"checked":""}" onclick="toggleDeliverable(${i})" id="dc-${i}"></div>
+          <span style="${isChecked?"text-decoration:line-through;color:var(--text-muted)":""}" id="dt-${i}">${d}</span>
+        </div>`;
+      }).join("")}`;
+  }
+
+  // Meta rows
+  const cats = (project.categoryIds||[]).map(id=>catMap[id]?`${catMap[id].icon} ${catMap[id].name}`:id).filter(Boolean).join(", ")||"—";
+  document.getElementById("proj-meta-rows").innerHTML = [
+    ["Budget",     `RM ${(project.budgetAmount||0).toLocaleString()} (${project.budgetType||"fixed"})`],
+    ["Currency",   "MYR"],
+    ["Start date", fmt(project.startDate)],
+    ["End date",   fmt(project.endDate)],
+    ["Categories", cats],
+    ["Tags",       (project.tags||[]).join(", ")||"—"],
+    ["PM",         project.pmId||"—"],
+  ].map(([l,v])=>`<div class="drow"><span class="dl">${l}</span><span style="font-size:.875rem">${v}</span></div>`).join("");
+
+  // Current statuses panel
+  document.getElementById("current-statuses").innerHTML = `
+    <div class="drow"><span class="dl">Project</span>${pill(project.projectStatus||project.status||"active",(project.projectStatus||project.status||"Active").replace(/_/g," "))}</div>
+    <div class="drow"><span class="dl">Work</span>${pill(project.workStatus||"in_progress",(project.workStatus||"In progress").replace(/_/g," "))}</div>
+    <div class="drow"><span class="dl">Payment</span>${pill(project.paymentStatus||"unpaid",(project.paymentStatus||"Unpaid").replace(/_/g," "))}</div>
+    <div class="drow" style="border:none"><span class="dl">Freelancer</span>${pill(project.freelancerStatus||"accepted",(project.freelancerStatus||"Accepted").replace(/_/g," "))}</div>`;
+
+  // Team panel
+  const flName = freelancerProfile.fullName||project.confirmedFreelancerId||"Not assigned";
+  const flInit = flName.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  document.getElementById("proj-team").innerHTML = `
+    <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.6rem">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--brand);color:white;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center">${flInit}</div>
+      <div>
+        <div style="font-size:.875rem;font-weight:600">${flName}</div>
+        <div style="font-size:.75rem;color:var(--text-muted)">Freelancer</div>
+      </div>
+    </div>`;
+
+  // Contract banner
+  if(contract){
+    document.getElementById("contract-banner").style.display="flex";
+    const statusLabel = {draft:"Draft — awaiting signatures",sent:"Sent — awaiting signature",
+      signed:"Signed by both parties",active:"Active contract",completed:"Completed",disputed:"Disputed"}[contract.status]||contract.status;
+    document.getElementById("contract-banner-status").textContent = statusLabel;
+    document.getElementById("contract-link").href = `contracts.html?id=${contract.id}`;
+  } else if(role!=="freelancer"){
+    // PM/admin: offer to create contract
+    document.getElementById("contract-banner").style.display="flex";
+    document.getElementById("contract-banner-status").textContent = "No contract yet — create one to formalise this project.";
+    document.getElementById("contract-link").textContent = "Create contract →";
+    document.getElementById("contract-link").href = `contracts.html?project=${projectId}`;
+  }
+
+  // ── Status update controls (role-based) ───────
+  function buildStatusControls(){
+    const el = document.getElementById("status-controls");
+
+    if(role==="freelancer"){
+      // Freelancer can update: work status + their own freelancer status
+      el.innerHTML = `
+        <div class="status-group">
+          <label>My work status</label>
+          <select class="status-select" id="sel-freelancer-status">
+            ${[
+              ["accepted","Accepted"],["in_progress","In Progress"],["researching","Researching"],
+              ["draft_ready","Draft Ready"],["submitted","Submitted"],["awaiting_feedback","Awaiting Feedback"],
+              ["revising","Revising"],["revision_round_1","Revision Round 1"],["revision_round_2","Revision Round 2"],
+              ["final_revision","Final Revision"],["resubmitted","Resubmitted"],
+              ["ready_for_approval","Ready for Approval"],["completed","Completed"],
+              ["delivered","Delivered"],["on_hold","On Hold"],["cancelled","Cancelled"]
+            ].map(([v,l])=>`<option value="${v}" ${(project.freelancerStatus||"accepted")===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="status-group">
+          <label>Note (optional)</label>
+          <textarea id="status-note" rows="2" placeholder="Add a brief update for the PM…" style="width:100%;resize:vertical"></textarea>
+        </div>`;
+    } else {
+      // PM / Admin can update: project status, work status, payment status, PM status
+      el.innerHTML = `
+        <div class="status-group">
+          <label>Project status</label>
+          <select class="status-select" id="sel-project-status">
+            ${[
+              ["active","Active"],["on_hold","On Hold"],["completed","Completed"],["cancelled","Cancelled"]
+            ].map(([v,l])=>`<option value="${v}" ${(project.projectStatus||project.status||"active")===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="status-group">
+          <label>PM / Review status</label>
+          <select class="status-select" id="sel-pm-status">
+            ${[
+              ["pending_assignment","Pending Assignment"],["assigned","Assigned"],
+              ["under_review","Under Review"],["changes_requested","Changes Requested"],
+              ["amendments_required","Amendments Required"],["qa_review","QA Review"],
+              ["client_review","Client Review"],["approved","Approved"],
+              ["final_approval","Final Approval"],["completed","Completed"],
+              ["closed","Closed"],["on_hold","On Hold"],["cancelled","Cancelled"],["rejected","Rejected"]
+            ].map(([v,l])=>`<option value="${v}" ${(project.pmStatus||"assigned")===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="status-group">
+          <label>Payment status</label>
+          <select class="status-select" id="sel-payment-status">
+            ${[
+              ["unpaid","Unpaid"],["partially_paid","Partially Paid"],["awaiting_payment","Awaiting Payment"],
+              ["invoice_sent","Invoice Sent"],["paid","Paid"],["refunded","Refunded"]
+            ].map(([v,l])=>`<option value="${v}" ${(project.paymentStatus||"unpaid")===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="status-group">
+          <label>Work / delivery status</label>
+          <select class="status-select" id="sel-work-status">
+            ${[
+              ["in_progress","In Progress"],["submitted","Submitted"],["under_review","Under Review"],
+              ["revision_requested","Revision Requested"],["revising","Revising"],
+              ["resubmitted","Resubmitted"],["final_review","Final Review"],["approved","Approved"],
+              ["files_uploaded","Files Uploaded"],["awaiting_client_assets","Awaiting Client Assets"],
+              ["awaiting_confirmation","Awaiting Confirmation"],["delayed","Delayed"],
+              ["blocked","Blocked"],["escalated","Escalated"],["completed","Completed"]
+            ].map(([v,l])=>`<option value="${v}" ${(project.workStatus||"in_progress")===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="status-group">
+          <label>Note (optional)</label>
+          <textarea id="status-note" rows="2" placeholder="Add a note to the activity log…" style="width:100%;resize:vertical"></textarea>
+        </div>`;
+    }
+  }
+  buildStatusControls();
+
+  // ── Save status ───────────────────────────────
+  document.getElementById("btn-update-status").addEventListener("click", async()=>{
+    const btn = document.getElementById("btn-update-status");
+    const alertEl = document.getElementById("status-alert");
+    btn.disabled=true; btn.textContent="Saving…";
+
+    try {
+      const note = document.getElementById("status-note")?.value.trim()||"";
+      let updates = { updatedAt:serverTimestamp() };
+      let logEntry = { by:uid, role, at:new Date().toISOString(), note };
+
+      if(role==="freelancer"){
+        const fs = document.getElementById("sel-freelancer-status").value;
+        updates.freelancerStatus = fs;
+        logEntry.action = `Freelancer status → ${fs.replace(/_/g," ")}`;
+      } else {
+        const ps  = document.getElementById("sel-project-status").value;
+        const pms = document.getElementById("sel-pm-status").value;
+        const pay = document.getElementById("sel-payment-status").value;
+        const ws  = document.getElementById("sel-work-status").value;
+        updates.projectStatus  = ps;
+        updates.pmStatus       = pms;
+        updates.paymentStatus  = pay;
+        updates.workStatus     = ws;
+        // Keep legacy status field in sync
+        updates.status = ps==="completed"?"completed":ps==="cancelled"?"cancelled":"in_progress";
+        logEntry.action = `Status updated — Project: ${ps.replace(/_/g," ")}, Work: ${ws.replace(/_/g," ")}, Payment: ${pay.replace(/_/g," ")}`;
+      }
+
+      updates.activityLog = arrayUnion(logEntry);
+      await updateDoc(doc(db,"projects",projectId), updates);
+
+      // Update local state
+      Object.assign(project, updates);
+      project.activityLog = [...(project.activityLog||[]), logEntry];
+
+      // Re-render status areas
+      document.getElementById("proj-status-badge").innerHTML = pill(project.projectStatus||project.status||"active",
+        (project.projectStatus||project.status||"Active").replace(/_/g," "));
+      document.getElementById("current-statuses").innerHTML = `
+        <div class="drow"><span class="dl">Project</span>${pill(project.projectStatus||project.status||"active",(project.projectStatus||project.status||"Active").replace(/_/g," "))}</div>
+        <div class="drow"><span class="dl">Work</span>${pill(project.workStatus||"in_progress",(project.workStatus||"In progress").replace(/_/g," "))}</div>
+        <div class="drow"><span class="dl">Payment</span>${pill(project.paymentStatus||"unpaid",(project.paymentStatus||"Unpaid").replace(/_/g," "))}</div>
+        <div class="drow" style="border:none"><span class="dl">Freelancer</span>${pill(project.freelancerStatus||"accepted",(project.freelancerStatus||"Accepted").replace(/_/g," "))}</div>`;
+
+      renderActivity();
+      document.getElementById("status-note").value="";
+      alertEl.innerHTML=`<div class="alert alert-success">✓ Status updated.</div>`;
+      alertEl.style.display="block";
+      setTimeout(()=>alertEl.style.display="none",3000);
+    } catch(e){
+      alertEl.innerHTML=`<div class="alert alert-error">Error: ${e.message}</div>`;
+      alertEl.style.display="block";
+    }
+    btn.disabled=false; btn.textContent="Save status";
+  });
+
+  // ── Deliverable toggle ────────────────────────
+  window.toggleDeliverable = async (idx) => {
+    const checked = [...(project.checkedDeliverables||[])];
+    const pos = checked.indexOf(idx);
+    if(pos>-1) checked.splice(pos,1); else checked.push(idx);
+    project.checkedDeliverables = checked;
+    // Update UI instantly
+    const dc = document.getElementById("dc-"+idx);
+    const dt = document.getElementById("dt-"+idx);
+    const isNowChecked = checked.includes(idx);
+    dc.classList.toggle("checked", isNowChecked);
+    dt.style.textDecoration = isNowChecked?"line-through":"none";
+    dt.style.color = isNowChecked?"var(--text-muted)":"";
+    // Persist
+    try { await updateDoc(doc(db,"projects",projectId),{checkedDeliverables:checked,updatedAt:serverTimestamp()}); }
+    catch(e){ console.error(e); }
+  };
+
+  // ── Activity log ──────────────────────────────
+  function renderActivity(){
+    const log = [...(project.activityLog||[])].reverse();
+    const el  = document.getElementById("activity-log");
+    if(!log.length){ el.innerHTML=`<div style="color:var(--text-muted);font-size:.875rem">No activity yet.</div>`; return; }
+    el.innerHTML = log.map((e,i)=>`
+      <div class="timeline-item ${i===log.length-1?"muted":""}">
+        <div class="tl-time">${e.at?new Date(e.at).toLocaleString("en-MY",{dateStyle:"medium",timeStyle:"short"}):"—"}</div>
+        <div class="tl-text">${e.action||"Update"}</div>
+        ${e.note?`<div class="tl-sub">"${e.note}"</div>`:""}
+        <div class="tl-sub">by ${e.role==="freelancer"?"Freelancer":"PM/Admin"}</div>
+      </div>`).join("");
+  }
+  // Seed initial log entry if empty
+  if(!(project.activityLog||[]).length && project.confirmedFreelancerId){
+    const seed = [{action:"Project accepted by freelancer",role:"system",at:project.updatedAt?.toDate?.()?.toISOString()||new Date().toISOString()}];
+    project.activityLog = seed;
+    updateDoc(doc(db,"projects",projectId),{activityLog:seed}).catch(()=>{});
+  }
+  renderActivity();
+
+  // ── Header quick actions ──────────────────────
+  const headerActions = document.getElementById("header-actions");
+  if(role!=="freelancer" && !contract){
+    headerActions.innerHTML=`<a href="contracts.html?project=${projectId}" class="btn btn-primary btn-sm">📄 Create contract</a>`;
+  }
+  if(contract){
+    headerActions.innerHTML=`<a href="contracts.html?id=${contract.id}" class="btn btn-outline btn-sm">📄 View contract</a>`;
+  }
+</script>
+</body>
+</html>
