@@ -329,11 +329,12 @@
             <div style="font-size:.8rem;color:var(--text-muted)">
               ${(p.categoryIds||[]).slice(0,2).map(id=>categories.find(c=>c.id===id)).filter(Boolean).map(c=>`${c.icon} ${c.name}`).join(", ")||"No categories"}
             </div>
-            <div style="display:flex;align-items:center;gap:.4rem">
+            <div style="display:flex;align-items:center;gap:.5rem">
               ${responseBadge}
               <span style="font-size:.8rem;color:var(--text-muted)">
                 ${invCount} invite${invCount!==1?"s":""}${pendCount?" · "+pendCount+" pending":""}
               </span>
+              ${["in_progress","completed"].includes(p.status)?`<a href="project-detail.html?id=${p.id}" class="btn btn-ghost btn-sm" onclick="event.stopPropagation()" style="padding:.25rem .6rem;font-size:.75rem">Details ↗</a>`:""}
             </div>
           </div>
         </div>`;
@@ -502,6 +503,9 @@
     if(next[p.status]) {
       const nextLabel = { open:"Mark open", in_progress:"Mark in progress", completed:"Mark completed" }[next[p.status]];
       actions.innerHTML += `<button class="btn btn-outline btn-sm" onclick="advanceStatus('${projectId}','${next[p.status]}')">→ ${nextLabel}</button>`;
+    }
+    if(["in_progress","completed"].includes(p.status)){
+      actions.innerHTML += `<a href="project-detail.html?id=${projectId}" class="btn btn-primary btn-sm">View details ↗</a>`;
     }
     actions.innerHTML += `<button class="btn btn-ghost btn-sm" onclick="openEdit('${projectId}')">Edit</button>`;
     if(p.status!=="completed"&&p.status!=="cancelled"){

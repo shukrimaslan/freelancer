@@ -334,6 +334,9 @@
               ? "Responded " + inv.respondedAt.toDate().toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"})
               : inv.status==="expired" ? "Response window closed" : ""}
           </span>
+          ${inv.status==="accepted" && p.id ? `
+            <a href="project-detail.html?id=${p.id}" class="btn btn-primary btn-sm">View project →</a>
+          ` : ""}
         </div>`}
     </div>`;
   }
